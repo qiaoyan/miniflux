@@ -40,7 +40,7 @@ func Serve(router *mux.Router, store *storage.Storage, feedHandler *feed.Handler
 	sr.HandleFunc("/import", handler.importFeeds).Methods("POST")
 	sr.HandleFunc("/feeds/{feedID}/entries", handler.getFeedEntries).Methods("GET")
 	sr.HandleFunc("/feeds/{feedID}/entries/{entryID}", handler.getFeedEntry).Methods("GET")
-	sr.HandleFunc("/categories/{categoryID}/entries", handler.getEntries).Methods("GET")
+	sr.HandleFunc("/categories/{categoryID}/entries", handler.getCategoryEntries).Methods("GET")
 	sr.HandleFunc("/entries", handler.getEntries).Methods("GET")
 	sr.HandleFunc("/entries", handler.setEntryStatus).Methods("PUT")
 	sr.HandleFunc("/entries/{entryID}", handler.getEntry).Methods("GET")
