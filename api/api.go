@@ -28,6 +28,7 @@ func Serve(router *mux.Router, store *storage.Storage, feedHandler *feed.Handler
 	sr.HandleFunc("/categories", handler.getCategories).Methods("GET")
 	sr.HandleFunc("/categories/{categoryID}", handler.updateCategory).Methods("PUT")
 	sr.HandleFunc("/categories/{categoryID}", handler.removeCategory).Methods("DELETE")
+	sr.HandleFunc("/categories/{categoryID}/entries", handler.getCategoryEntries).Methods("GET")
 	sr.HandleFunc("/discover", handler.getSubscriptions).Methods("POST")
 	sr.HandleFunc("/feeds", handler.createFeed).Methods("POST")
 	sr.HandleFunc("/feeds", handler.getFeeds).Methods("GET")
