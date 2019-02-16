@@ -421,6 +421,25 @@ func (c *Client) FeedEntries(feedID int64, filter *Filter) (*EntryResultSet, err
 	return &result, nil
 }
 
+// CategoryEntries fetch feed entries.
+func (c *Client) CategoryEntries(categoryID int64, filter *Filter) (*EntryResultSet, error) {
+	path := buildFilterQueryString(fmt.Sprintf("/v1/categories/%d/entries", categoryID), filter)
+
+	body, err := c.request.Get(path)
+	if err != nil {
+		return nil, err
+	}
+	defer body.Close()
+
+	var result EntryResultSet
+	decoder := json.NewDecoder(body)
+	if err := decoder.Decode(&result); err != nil {
+		return nil, fmt.Errorf("miniflux: response error (%v)", err)
+	}
+
+	return &result, nil
+}
+
 // UpdateEntries updates the status of a list of entries.
 func (c *Client) UpdateEntries(entryIDs []int64, status string) error {
 	type payload struct {
