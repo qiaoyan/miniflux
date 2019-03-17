@@ -188,6 +188,9 @@ func (s *Storage) UpdateEntries(userID, feedID int64, entries model.Entries, upd
 
 // ArchiveEntries changes the status of read items to "removed" after specified days.
 func (s *Storage) ArchiveEntries(days int) error {
+	if days < 0 {
+		return nil
+	}
 	query := fmt.Sprintf(`
 			UPDATE entries SET status='removed'
 			WHERE id=ANY(SELECT id FROM entries WHERE status='read' AND starred is false AND published_at < now () - '%d days'::interval LIMIT 5000)
@@ -316,9 +319,9 @@ func (s *Storage) MarkCategoryAsRead(userID, categoryID int64, before time.Time)
 }
 
 // EntryURLExists returns true if an entry with this URL already exists.
-func (s *Storage) EntryURLExists(userID int64, entryURL string) bool {
+func (s *Storage) EntryURLExists(feedID int64, entryURL string) bool {
 	var result int
-	query := `SELECT count(*) as c FROM entries WHERE user_id=$1 AND url=$2`
-	s.db.QueryRow(query, userID, entryURL).Scan(&result)
+	query := `SELECT count(*) as c FROM entries WHERE feed_id=$1 AND url=$2`
+	s.db.QueryRow(query, feedID, entryURL).Scan(&result)
 	return result >= 1
 }
