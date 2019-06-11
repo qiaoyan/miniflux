@@ -209,7 +209,10 @@ var templateViewsMap = map[string]string{
     <ul>
     {{ if .entries }}
         <li>
-            <a href="#" data-on-click="markPageAsRead">{{ t "menu.mark_page_as_read" }}</a>
+            <a href="#" data-on-click="markPageAsRead"
+               data-show-only-unread="{{ if .showOnlyUnreadEntries }}1{{ end }}">
+                {{ t "menu.mark_page_as_read" }}
+            </a>
         </li>
     {{ end }}
     {{ if .showOnlyUnreadEntries }}
@@ -247,7 +250,10 @@ var templateViewsMap = map[string]string{
         {{ if .entries }}
         <ul>
             <li>
-                <a href="#" data-on-click="markPageAsRead">{{ t "menu.mark_page_as_read" }}</a>
+                <a href="#" data-on-click="markPageAsRead"
+                   data-show-only-unread="{{ if .showOnlyUnreadEntries }}1{{ end }}">
+                    {{ t "menu.mark_page_as_read" }}
+                </a>
             </li>
         </ul>
         {{ end }}
@@ -654,7 +660,7 @@ var templateViewsMap = map[string]string{
     </article>
     {{ if .entry.Enclosures }}
     <aside class="entry-enclosures">
-        <h3>{{ t "Attachments" }}</h3>
+        <h3>{{ t "page.entry.attachments" }}</h3>
         {{ range .entry.Enclosures }}
             <div class="entry-enclosure">
                 {{ if hasPrefix .MimeType "audio/" }}
@@ -698,7 +704,10 @@ var templateViewsMap = map[string]string{
     <ul>
         {{ if .entries }}
         <li>
-            <a href="#" data-on-click="markPageAsRead">{{ t "menu.mark_page_as_read" }}</a>
+            <a href="#" data-on-click="markPageAsRead"
+               data-show-only-unread="{{ if .showOnlyUnreadEntries }}1{{ end }}">
+                {{ t "menu.mark_page_as_read" }}
+            </a>
         </li>
         {{ end }}
         {{ if .showOnlyUnreadEntries }}
@@ -735,7 +744,9 @@ var templateViewsMap = map[string]string{
     <h3>{{ t "alert.feed_error" }}</h3>
     <p>{{ t .feed.ParsingErrorMsg }}</p>
 </div>
-{{ else if not .entries }}
+{{ end }}
+
+{{ if not .entries }}
     {{ if .showOnlyUnreadEntries }}
         <p class="alert">{{ t "alert.no_unread_entry" }}</p>
     {{ else }}
@@ -762,7 +773,10 @@ var templateViewsMap = map[string]string{
         {{ if .entries }}
         <ul>
             <li>
-                <a href="#" data-on-click="markPageAsRead">{{ t "menu.mark_page_as_read" }}</a>
+                <a href="#" data-on-click="markPageAsRead"
+                   data-show-only-unread="{{ if .showOnlyUnreadEntries }}1{{ end }}">
+                    {{ t "menu.mark_page_as_read" }}
+                </a>
             </li>
         </ul>
         {{ end }}
@@ -1103,7 +1117,7 @@ var templateViewsMap = map[string]string{
         <input type="password" name="password" id="form-password" value="{{ .form.Password }}" required>
 
         <div class="buttons">
-            <button type="submit" class="button button-primary" data-label-loading="{{ t "form.submit.saving" }}">{{ t "action.login" }}</button>
+            <button type="submit" class="button button-primary" data-label-loading="{{ t "form.submit.loading" }}">{{ t "action.login" }}</button>
         </div>
     </form>
     {{ if hasOAuth2Provider "google" }}
@@ -1268,6 +1282,8 @@ var templateViewsMap = map[string]string{
         <option value="desc" {{ if eq "desc" $.form.EntryDirection }}selected="selected"{{ end }}>{{ t "form.prefs.select.recent_first" }}</option>
     </select>
 
+    <label><input type="checkbox" name="keyboard_shortcuts" value="1" {{ if .form.KeyboardShortcuts }}checked{{ end }}> {{ t "form.prefs.label.keyboard_shortcuts" }}</label>
+
     <div class="buttons">
         <button type="submit" class="button button-primary" data-label-loading="{{ t "form.submit.saving" }}">{{ t "action.update" }}</button>
     </div>
@@ -1407,23 +1423,23 @@ var templateViewsMapChecksums = map[string]string{
 	"add_subscription":    "a0f1d2bc02b6adc83dbeae593f74d9b936102cd6dd73302cdbec2137cafdcdd9",
 	"bookmark_entries":    "609f4b2342152fe495a219a32f17a4528b01807d61f53cee0cbebf728be73c42",
 	"categories":          "642ee3cddbd825ee6ab5a77caa0d371096b55de0f1bd4ae3055b8c8a70507d8d",
-	"category_entries":    "07ff798025f8527de5351a89fd5fc51973c1ea6c56710b4f703cbae183fbcbb6",
+	"category_entries":    "8ed501d58fd659c6f505d200f5f92dc2d3f8ed8893c7a8076d05ca54c9adb944",
 	"choose_subscription": "33c04843d7c1b608d034e605e52681822fc6d79bc6b900c04915dd9ebae584e2",
 	"create_category":     "6b22b5ce51abf4e225e23a79f81be09a7fb90acb265e93a8faf9446dff74018d",
 	"create_user":         "1e940be3afefc0a5c6273bbadcddc1e29811e9548e5227ac2adfe697ca5ce081",
 	"edit_category":       "daf073d2944a180ce5aaeb80b597eb69597a50dff55a9a1d6cf7938b48d768cb",
 	"edit_feed":           "ab30c31a4385a7b16c54baa78bdcb93a57181ed1c5018ce097d7eb50673bb995",
 	"edit_user":           "f4f99412ba771cfca2a2a42778b023b413c5494e9a287053ba8cf380c2865c5f",
-	"entry":               "2ea9fee1ae5513ef1abb5923221c2ef1212e26d3bb651da66069ce8a336cbb7c",
-	"feed_entries":        "ba6a764d2784797629103500cc099178f29856dcfc95e59f0d134c32951cd3a4",
+	"entry":               "1626bf4dd3223b2f730865676162aa0a9f0a0e009cdea90f705230542922e0f4",
+	"feed_entries":        "0b97344b4045058b7154d0c01b85e4afd957c23e7cb2d011451f96baf6233dfc",
 	"feeds":               "31acc253c547a6cce5710d72a6f6b3b396162ecd5e5af295b2cf47c1ff55bd06",
 	"history_entries":     "b65ca1d85615caa7c314a33f1cb997aa3477a79e66b9894b2fd387271ad467d2",
 	"import":              "8349e47a783bb40d8e9248b4771656e5f006185e11079e1c4680dd52633420ed",
 	"integrations":        "f85b4a48ab1fc13b8ca94bfbbc44bd5e8784f35b26a63ec32cbe82b96b45e008",
-	"login":               "f9e6714d34fdce82266c8b23b0ff449d05ba71e474d26f711da66f8c4fdc076a",
+	"login":               "2e72d2d4b9786641b696bedbed5e10b04bdfd68254ddbbdb0a53cca621d200c7",
 	"search_entries":      "d71849a4f2b0573c7c76ad0ea941812009e9f022de60895987a781d3e6f08a01",
 	"sessions":            "1b3ec0970a4111b81f86d6ed187bb410f88972e2ede6723b9febcc4c7e5fc921",
-	"settings":            "bc04faf83dd977306825973375954600bd014619340188e1243fd9e2f5d5e1a9",
+	"settings":            "152143e58d057ea6ab3bfd8dd947bfd70685843ca40e40542484b23849746df4",
 	"unread_entries":      "880018cbc59ec09b23dd800c4010fadad944d7023e0d36a3872c09b5d4952799",
 	"users":               "4b56cc76fbcc424e7c870d0efca93bb44dbfcc2a08b685cf799c773fbb8dfb2f",
 }
