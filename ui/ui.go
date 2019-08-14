@@ -30,6 +30,7 @@ func Serve(router *mux.Router, store *storage.Storage, pool *worker.Pool, feedHa
 	uiRouter.HandleFunc("/favicon.ico", handler.showFavicon).Name("favicon").Methods("GET")
 	uiRouter.HandleFunc("/icon/{filename}", handler.showAppIcon).Name("appIcon").Methods("GET")
 	uiRouter.HandleFunc("/manifest.json", handler.showWebManifest).Name("webManifest").Methods("GET")
+	uiRouter.HandleFunc("/apple-app-site-association", handler.showAppleAppSiteAssociation).Name("appleAppSiteAssociation").Methods("GET")
 
 	// New subscription pages.
 	uiRouter.HandleFunc("/subscribe", handler.showAddSubscriptionPage).Name("addSubscription").Methods("GET")
