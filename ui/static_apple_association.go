@@ -11,7 +11,7 @@ import (
 	"miniflux.app/http/response/json"
 )
 
-func (h *handler) showAppleAppSiteAssociation(w http.ResponseWriter) {
+func (h *handler) showAppleAppSiteAssociation(w http.ResponseWriter, r *http.Request) {
 	type siteIdentifiers struct {
 		Apps []string `json:"apps"`
 	}
@@ -30,5 +30,5 @@ func (h *handler) showAppleAppSiteAssociation(w http.ResponseWriter) {
 		Webcredentials: siteIdentifiers{Apps: []string{"V6CP2Z4H8Q.com.NewMobileWay.Geed",},},
 	}
 
-	json.OK(w, _, result)
+	json.OK(w, r, result)
 }
