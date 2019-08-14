@@ -121,8 +121,8 @@ docker-images:
 	for arch in amd64 arm32v6 arm64v8; do \
 	  case $${arch} in \
 		amd64   ) miniflux_arch="amd64";; \
-		arm32v6 ) miniflux_arch="armv6";; \
-		arm64v8 ) miniflux_arch="armv8";; \
+		# arm32v6 ) miniflux_arch="armv6";; \
+		# arm64v8 ) miniflux_arch="armv8";; \
 	  esac ;\
 	  cp Dockerfile Dockerfile.$${arch} && \
 	  sed -i"" -e "s|__BASEIMAGE_ARCH__|$${arch}|g" Dockerfile.$${arch} && \
