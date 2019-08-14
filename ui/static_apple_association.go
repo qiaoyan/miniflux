@@ -10,8 +10,6 @@ import (
 
 	"miniflux.app/http/request"
 	"miniflux.app/http/response/json"
-	"miniflux.app/http/route"
-	"miniflux.app/model"
 )
 
 func (h *handler) showAppleAppSiteAssociation(w http.ResponseWriter, r *http.Request) {
