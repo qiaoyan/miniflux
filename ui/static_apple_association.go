@@ -30,11 +30,7 @@ func (h *handler) showAppleAppSiteAssociation(w http.ResponseWriter, r *http.Req
 	// }
 
 	result := &credentials{
-		Webcredentials: siteIdentifiers{
-Apps: []string{
-	"V6CP2Z4H8Q.com.NewMobileWay.Geed",
-},
-		},
+		Webcredentials: siteIdentifiers{Apps: []string{"V6CP2Z4H8Q.com.NewMobileWay.Geed",},},
 	}
 
 	json.OK(w, r, result)
