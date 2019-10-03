@@ -55,5 +55,8 @@ func cleanupScheduler(store *storage.Storage, frequency int, archiveDays int, se
 		if err := store.ArchiveEntries(archiveDays); err != nil {
 			logger.Error("[Scheduler:Cleanup] %v", err)
 		}
+		if err := store.OnlyKeepNumberOfUnreadInFeed(5000); err != nil {
+			logger.Error("[Scheduler:Cleanup] %v", err)
+		}
 	}
 }

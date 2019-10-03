@@ -201,6 +201,20 @@ func (s *Storage) ArchiveEntries(days int) error {
 	return nil
 }
 
+func (s *Storage) OnlyKeepNumberOfUnreadInFeed(maxUnreadCount int) error {
+	if maxUnreadCount < 0 {
+		return nil
+	}
+	query := fmt.Sprintf(`
+		WITH report AS (SELECT p.id, ROW_NUMBER() OVER (PARTITION BY feed_id ORDER BY published_at DESC) as order_in_feed FROM entries p WHERE status='unread' AND starred is false) 
+		UPDATE entries SET status='removed' WHERE id=ANY(SELECT id FROM report WHERE order_in_feed > %d LIMIT 500000)
+		`, maxUnreadCount)
+	if _, err := s.db.Exec(query); err != nil {
+		return fmt.Errorf("unable to only keep max count of unread in feed entries: %v", err)
+	}
+	return nil
+}
+
 // SetEntriesStatus update the status of the given list of entries.
 func (s *Storage) SetEntriesStatus(userID int64, entryIDs []int64, status string) error {
 	query := `UPDATE entries SET status=$1 WHERE user_id=$2 AND id=ANY($3)`
