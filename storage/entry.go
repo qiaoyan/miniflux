@@ -192,7 +192,7 @@ func (s *Storage) ArchiveEntries(days int) error {
 	}
 	query := fmt.Sprintf(`
 			UPDATE entries SET status='removed'
-			WHERE id=ANY(SELECT id FROM entries WHERE status='read' AND starred is false AND published_at < now () - '%d days'::interval LIMIT 5000)
+			WHERE id=ANY(SELECT id FROM entries WHERE status='read' AND starred is false AND published_at < now () - '%d days'::interval LIMIT 50000)
 		`, days)
 	if _, err := s.db.Exec(query); err != nil {
 		return fmt.Errorf("unable to archive read entries: %v", err)
@@ -206,8 +206,10 @@ func (s *Storage) OnlyKeepNumberOfUnreadInFeed(maxUnreadCount int) error {
 		return nil
 	}
 	query := fmt.Sprintf(`
-		WITH report AS (SELECT p.id, ROW_NUMBER() OVER (PARTITION BY feed_id ORDER BY published_at DESC) as order_in_feed FROM entries p WHERE status='unread' AND starred is false) 
-		UPDATE entries SET status='removed' WHERE id=ANY(SELECT id FROM report WHERE order_in_feed > %d LIMIT 500000)
+		WITH report AS 
+		(SELECT p.id, ROW_NUMBER() OVER (PARTITION BY feed_id ORDER BY published_at DESC) as order_in_feed FROM entries p WHERE status='unread' AND starred is false)
+		UPDATE entries SET status='removed' 
+		WHERE id=ANY(SELECT id FROM report WHERE order_in_feed > %d LIMIT 50000)
 		`, maxUnreadCount)
 	if _, err := s.db.Exec(query); err != nil {
 		return fmt.Errorf("unable to only keep max count of unread in feed entries: %v", err)
