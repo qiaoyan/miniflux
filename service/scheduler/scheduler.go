@@ -52,10 +52,10 @@ func cleanupScheduler(store *storage.Storage, frequency int, archiveDays int, se
 		nbUserSessions := store.CleanOldUserSessions(sessionsDays)
 		logger.Info("[Scheduler:Cleanup] Cleaned %d sessions and %d user sessions", nbSessions, nbUserSessions)
 
-		if err := store.ArchiveEntries(archiveDays); err != nil {
-			logger.Error("[Scheduler:Cleanup] %v", err)
-		}
-		if err := store.OnlyKeepNumberOfUnreadInFeed(5000); err != nil {
+		//if err := store.ArchiveEntries(archiveDays); err != nil {
+		//	logger.Error("[Scheduler:Cleanup] %v", err)
+		//}
+		if err := store.OnlyKeepNumberOfNonStarredInFeed(5000); err != nil {
 			logger.Error("[Scheduler:Cleanup] %v", err)
 		}
 	}

@@ -201,13 +201,13 @@ func (s *Storage) ArchiveEntries(days int) error {
 	return nil
 }
 
-func (s *Storage) OnlyKeepNumberOfUnreadInFeed(maxUnreadCount int) error {
+func (s *Storage) OnlyKeepNumberOfNonStarredInFeed(maxUnreadCount int) error {
 	if maxUnreadCount < 0 {
 		return nil
 	}
 	query := fmt.Sprintf(`
 		WITH report AS 
-		(SELECT p.id, ROW_NUMBER() OVER (PARTITION BY feed_id ORDER BY published_at DESC) as order_in_feed FROM entries p WHERE status='unread' AND starred is false)
+		(SELECT p.id, ROW_NUMBER() OVER (PARTITION BY feed_id ORDER BY published_at DESC) as order_in_feed FROM entries p WHERE (status='unread' OR status='read') AND starred is false)
 		UPDATE entries SET status='removed' 
 		WHERE id=ANY(SELECT id FROM report WHERE order_in_feed > %d LIMIT 50000)
 		`, maxUnreadCount)
