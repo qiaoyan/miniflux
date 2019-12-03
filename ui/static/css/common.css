@@ -151,6 +151,35 @@ a:hover {
     display: none;
 }
 
+.toast-wrap {
+    visibility: hidden;
+    opacity: 0;
+    position: fixed;
+    left: 0;
+    bottom: 10%;
+    color: #fff;
+    width: 100%;
+    text-align: center;
+ }
+
+ .toast-msg {
+    background-color: rgba(0,0,0,0.7);
+    padding: 2px 5px;
+    border-radius: 5px;
+ }
+ 
+.toastAnimate {
+    animation: toastKeyFrames 2s;
+}
+
+@keyframes toastKeyFrames {
+    0% {visibility: hidden; opacity: 0;}
+   25% {visibility: visible; opacity: 1; z-index: 9999}
+   50% {visibility: visible; opacity: 1; z-index: 9999}
+   75% {visibility: visible; opacity: 1; z-index: 9999}
+   100% {visibility: hidden; opacity: 0; z-index: 0}
+}
+
 @media (min-width: 600px) {
     body {
         margin: auto;
@@ -462,7 +491,7 @@ a.button {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 360px;
+    width: 380px;
     overflow: auto;
     color: var(--modal-color);
     background: var(--modal-background);
@@ -795,7 +824,6 @@ article.feed-parsing-error {
     margin-left: 20px;
     margin-top: 20px;
     margin-bottom: 20px;
-    color: #888;
     line-height: 1.4em;
     font-family: var(--entry-content-quote-font-family);
 }
@@ -830,7 +858,6 @@ article.feed-parsing-error {
 }
 
 .entry-content table {
-    table-layout: fixed;
     max-width: 100%;
 }
 
@@ -855,8 +882,13 @@ article.feed-parsing-error {
     font-weight: 600;
 }
 
-.entry-enclosures h3 {
+details.entry-enclosures {
+    margin-top: 25px;
+}
+
+.entry-enclosures summary {
     font-weight: 500;
+    font-size: 1.2em;
 }
 
 .entry-enclosure {
