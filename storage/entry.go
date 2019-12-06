@@ -201,6 +201,8 @@ func (s *Storage) UpdateEntries(userID, feedID int64, entries model.Entries, upd
 		entryHashes = append(entryHashes, entry.Hash)
 	}
 
+
+
 	if err := s.cleanupEntries(feedID, entryHashes); err != nil {
 		logger.Error(`store: feed #%d: %v`, feedID, err)
 	}
@@ -237,7 +239,7 @@ func (s *Storage) OnlyKeepNumberOfNonStarredInFeed(maxUnreadCount int) error {
 		WITH report AS 
 		(SELECT p.id, ROW_NUMBER() OVER (PARTITION BY feed_id ORDER BY published_at DESC) as order_in_feed FROM entries p WHERE (status='unread' OR status='read') AND starred is false)
 		UPDATE entries SET status='removed' 
-		WHERE id=ANY(SELECT id FROM report WHERE order_in_feed > %d LIMIT 50000)
+		WHERE id=ANY(SELECT id FROM report WHERE order_in_feed > %d LIMIT 50000000000)
 		`, maxUnreadCount)
 	if _, err := s.db.Exec(query); err != nil {
 		return fmt.Errorf("unable to only keep max count of unread in feed entries: %v", err)
