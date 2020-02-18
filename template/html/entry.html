@@ -4,7 +4,7 @@
 <section class="entry" data-id="{{ .entry.ID }}">
     <header class="entry-header">
         <h1>
-            <a href="{{ .entry.URL }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{ .entry.Title }}</a>
+            <a href="{{ .entry.URL | safeURL }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{ .entry.Title }}</a>
         </h1>
         <div class="entry-actions">
             <ul>
@@ -54,7 +54,7 @@
                 </li>
                 {{ if .entry.CommentsURL }}
                     <li>
-                        <a href="{{ .entry.CommentsURL }}" title="{{ t "entry.comments.title" }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{ t "entry.comments.label" }}</a>
+                        <a href="{{ .entry.CommentsURL | safeURL }}" title="{{ t "entry.comments.title" }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" data-comments-link="true">{{ t "entry.comments.label" }}</a>
                     </li>
                 {{ end }}
             </ul>
@@ -95,6 +95,7 @@
     <details class="entry-enclosures">
         <summary>{{ t "page.entry.attachments" }} ({{ len .entry.Enclosures }})</summary>
         {{ range .entry.Enclosures }}
+            {{ if ne .URL "" }}
             <div class="entry-enclosure">
                 {{ if hasPrefix .MimeType "audio/" }}
                     <div class="enclosure-audio">
@@ -115,10 +116,11 @@
                 {{ end }}
 
                 <div class="entry-enclosure-download">
-                    <a href="{{ .URL }}" title="{{ t "action.download" }}{{ if gt .Size 0 }} - {{ formatFileSize .Size }}{{ end }} ({{ .MimeType }})" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{ .URL }}</a>
+                    <a href="{{ .URL | safeURL }}" title="{{ t "action.download" }}{{ if gt .Size 0 }} - {{ formatFileSize .Size }}{{ end }} ({{ .MimeType }})" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{ .URL | safeURL  }}</a>
                     <small>{{ if gt .Size 0 }} - <strong>{{ formatFileSize .Size }}</strong>{{ end }}</small>
                 </div>
             </div>
+            {{ end }}
         {{ end }}
         </details>
     {{ end }}

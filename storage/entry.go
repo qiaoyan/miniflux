@@ -76,9 +76,9 @@ func (s *Storage) UpdateEntryContent(entry *model.Entry) error {
 func (s *Storage) createEntry(entry *model.Entry) error {
 	query := `
 		INSERT INTO entries
-			(title, hash, url, comments_url, published_at, content, author, user_id, feed_id, document_vectors)
+			(title, hash, url, comments_url, published_at, content, author, user_id, feed_id, changed_at, document_vectors)
 		VALUES
-			($1, $2, $3, $4, $5, $6, $7, $8, $9, setweight(to_tsvector(substring(coalesce($1, '') for 1000000)), 'A') || setweight(to_tsvector(substring(coalesce($6, '') for 1000000)), 'B'))
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), setweight(to_tsvector(substring(coalesce($1, '') for 1000000)), 'A') || setweight(to_tsvector(substring(coalesce($6, '') for 1000000)), 'B'))
 		RETURNING
 			id, status
 	`
@@ -201,8 +201,6 @@ func (s *Storage) UpdateEntries(userID, feedID int64, entries model.Entries, upd
 		entryHashes = append(entryHashes, entry.Hash)
 	}
 
-
-
 	if err := s.cleanupEntries(feedID, entryHashes); err != nil {
 		logger.Error(`store: feed #%d: %v`, feedID, err)
 	}
@@ -249,7 +247,7 @@ func (s *Storage) OnlyKeepNumberOfNonStarredInFeed(maxUnreadCount int) error {
 
 // SetEntriesStatus update the status of the given list of entries.
 func (s *Storage) SetEntriesStatus(userID int64, entryIDs []int64, status string) error {
-	query := `UPDATE entries SET status=$1 WHERE user_id=$2 AND id=ANY($3)`
+	query := `UPDATE entries SET status=$1, changed_at=now() WHERE user_id=$2 AND id=ANY($3)`
 	result, err := s.db.Exec(query, status, userID, pq.Array(entryIDs))
 	if err != nil {
 		return fmt.Errorf(`store: unable to update entries statuses %v: %v`, entryIDs, err)
@@ -269,7 +267,7 @@ func (s *Storage) SetEntriesStatus(userID int64, entryIDs []int64, status string
 
 // ToggleBookmark toggles entry bookmark value.
 func (s *Storage) ToggleBookmark(userID int64, entryID int64) error {
-	query := `UPDATE entries SET starred = NOT starred WHERE user_id=$1 AND id=$2`
+	query := `UPDATE entries SET starred = NOT starred, changed_at=now() WHERE user_id=$1 AND id=$2`
 	result, err := s.db.Exec(query, userID, entryID)
 	if err != nil {
 		return fmt.Errorf(`store: unable to toggle bookmark flag for entry #%d: %v`, entryID, err)
@@ -277,7 +275,7 @@ func (s *Storage) ToggleBookmark(userID int64, entryID int64) error {
 
 	count, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf(`store: unable to toogle bookmark flag for entry #%d: %v`, entryID, err)
+		return fmt.Errorf(`store: unable to toggle bookmark flag for entry #%d: %v`, entryID, err)
 	}
 
 	if count == 0 {
@@ -289,7 +287,7 @@ func (s *Storage) ToggleBookmark(userID int64, entryID int64) error {
 
 // FlushHistory set all entries with the status "read" to "removed".
 func (s *Storage) FlushHistory(userID int64) error {
-	query := `UPDATE entries SET status=$1 WHERE user_id=$2 AND status=$3 AND starred='f'`
+	query := `UPDATE entries SET status=$1, changed_at=now() WHERE user_id=$2 AND status=$3 AND starred='f'`
 	_, err := s.db.Exec(query, model.EntryStatusRemoved, userID, model.EntryStatusRead)
 	if err != nil {
 		return fmt.Errorf(`store: unable to flush history: %v`, err)
@@ -300,7 +298,7 @@ func (s *Storage) FlushHistory(userID int64) error {
 
 // MarkAllAsRead updates all user entries to the read status.
 func (s *Storage) MarkAllAsRead(userID int64) error {
-	query := `UPDATE entries SET status=$1 WHERE user_id=$2 AND status=$3`
+	query := `UPDATE entries SET status=$1, changed_at=now() WHERE user_id=$2 AND status=$3`
 	result, err := s.db.Exec(query, model.EntryStatusRead, userID, model.EntryStatusUnread)
 	if err != nil {
 		return fmt.Errorf(`store: unable to mark all entries as read: %v`, err)
@@ -318,7 +316,8 @@ func (s *Storage) MarkFeedAsRead(userID, feedID int64, before time.Time) error {
 		UPDATE
 			entries
 		SET
-			status=$1
+			status=$1,
+			changed_at=now()
 		WHERE
 			user_id=$2 AND feed_id=$3 AND status=$4 AND published_at < $5
 	`
@@ -339,7 +338,8 @@ func (s *Storage) MarkCategoryAsRead(userID, categoryID int64, before time.Time)
 		UPDATE
 			entries
 		SET
-			status=$1
+			status=$1,
+			changed_at=now()
 		WHERE
 			user_id=$2
 		AND
