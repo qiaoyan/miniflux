@@ -23,6 +23,7 @@ func (h *handler) getFeedEntry(w http.ResponseWriter, r *http.Request) {
 	builder.WithFeedID(feedID)
 	builder.WithEntryID(entryID)
 
+
 	entry, err := builder.GetEntry()
 	if err != nil {
 		json.ServerError(w, r, err)
@@ -92,6 +93,7 @@ func (h *handler) getFeedEntries(w http.ResponseWriter, r *http.Request) {
 	builder.WithOrder(order)
 	builder.WithDirection(direction)
 	builder.WithOffset(offset)
+	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithLimit(limit)
 	configureFilters(builder, r)
 
@@ -146,6 +148,7 @@ func (h *handler) getCategoryEntries(w http.ResponseWriter, r *http.Request) {
 	builder.WithOrder(order)
 	builder.WithDirection(direction)
 	builder.WithOffset(offset)
+	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithLimit(limit)
 	configureFilters(builder, r)
 
@@ -197,6 +200,7 @@ func (h *handler) getEntries(w http.ResponseWriter, r *http.Request) {
 	builder.WithOrder(order)
 	builder.WithDirection(direction)
 	builder.WithOffset(offset)
+	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithLimit(limit)
 	configureFilters(builder, r)
 
