@@ -221,7 +221,7 @@ func (s *Storage) ArchiveEntries(days int) error {
 		SET
 			status='removed'
 		WHERE
-			id=ANY(SELECT id FROM entries WHERE status='read' AND starred is false AND published_at < now () - '%d days'::interval LIMIT 5000)
+			id=ANY(SELECT id FROM entries WHERE status='read' AND starred is false AND published_at < now () - '%d days'::interval LIMIT 50000000000)
 	`
 	if _, err := s.db.Exec(fmt.Sprintf(query, days)); err != nil {
 		return fmt.Errorf(`store: unable to archive read entries: %v`, err)
@@ -230,13 +230,13 @@ func (s *Storage) ArchiveEntries(days int) error {
 	return nil
 }
 
-func (s *Storage) OnlyKeepNumberOfNonStarredInFeed(maxUnreadCount int) error {
-	if maxUnreadCount < 0 {
+func (s *Storage) OnlyKeepNumberOfNonStarredUnreadInFeed(maxUnreadCount int) error {
+	if maxUnreadCount <= 0 {
 		return nil
 	}
 	query := fmt.Sprintf(`
 		WITH report AS 
-		(SELECT p.id, ROW_NUMBER() OVER (PARTITION BY feed_id ORDER BY published_at DESC) as order_in_feed FROM entries p WHERE (status='unread' OR status='read') AND starred is false)
+		(SELECT p.id, ROW_NUMBER() OVER (PARTITION BY feed_id ORDER BY published_at DESC) as order_in_feed FROM entries p WHERE status='unread' AND starred is false)
 		UPDATE entries SET status='removed' 
 		WHERE id=ANY(SELECT id FROM report WHERE order_in_feed > %d LIMIT 50000000000)
 		`, maxUnreadCount)
