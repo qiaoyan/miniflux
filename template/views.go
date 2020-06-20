@@ -225,10 +225,18 @@ var templateViewsMap = map[string]string{
             <div class="item-meta">
                 <ul class="item-meta-info">
                     <li>
-                        <a href="{{ route "categoryFeeds" "categoryID" .ID }}">{{ t "page.categories.feeds" }}</a>
+                        {{ if eq .FeedCount 0 }}{{ t "page.categories.no_feed" }}{{ else }}{{ plural "page.categories.feed_count" .FeedCount .FeedCount }}{{ end }}
+                    </li>
+                </ul>
+                <ul class="item-meta-icons">
+                    <li>
+                        <a href="{{ route "categoryEntries" "categoryID" .ID }}">{{ template "icon_entries" }}<span class="icon-label">{{ t "page.categories.entries" }}</span></a>
                     </li>
                     <li>
-                        <a href="{{ route "editCategory" "categoryID" .ID }}">{{ t "menu.edit_category" }}</a>
+                        <a href="{{ route "categoryFeeds" "categoryID" .ID }}">{{ template "icon_feeds" }}<span class="icon-label">{{ t "page.categories.feeds" }}</span></a>
+                    </li>
+                    <li>
+                        <a href="{{ route "editCategory" "categoryID" .ID }}">{{ template "icon_edit" }}<span class="icon-label">{{ t "menu.edit_category" }}</span></a>
                     </li>
                     {{ if eq .FeedCount 0 }}
                     <li>
@@ -238,7 +246,7 @@ var templateViewsMap = map[string]string{
                             data-label-yes="{{ t "confirm.yes" }}"
                             data-label-no="{{ t "confirm.no" }}"
                             data-label-loading="{{ t "confirm.loading" }}"
-                            data-url="{{ route "removeCategory" "categoryID" .ID }}">{{ t "action.remove" }}</a>
+                            data-url="{{ route "removeCategory" "categoryID" .ID }}">{{ template "icon_delete" }}<span class="icon-label">{{ t "action.remove" }}</span></a>
                     </li>
                     {{ end }}
                 </ul>
@@ -328,7 +336,7 @@ var templateViewsMap = map[string]string{
     <h1>{{ .category.Title }} &gt; {{ t "page.feeds.title" }} ({{ .total }})</h1>
     <ul>
         <li>
-            <a href="{{ route "categories" }}">{{ t "menu.categories" }}</a>
+            <a href="{{ route "categoryEntries" "categoryID" .category.ID }}">{{ t "menu.feed_entries" }}</a>
         </li>
         <li>
             <a href="{{ route "editCategory" "categoryID" .category.ID }}">{{ t "menu.edit_category" }}</a>
@@ -583,6 +591,7 @@ var templateViewsMap = map[string]string{
         </select>
 
         <label><input type="checkbox" name="crawler" value="1" {{ if .form.Crawler }}checked{{ end }}> {{ t "form.feed.label.crawler" }}</label>
+        <label><input type="checkbox" name="ignore_http_cache" value="1" {{ if .form.IgnoreHTTPCache }}checked{{ end }}> {{ t "form.feed.label.ignore_http_cache" }}</label>
         <label><input type="checkbox" name="disabled" value="1" {{ if .form.Disabled }}checked{{ end }}> {{ t "form.feed.label.disabled" }}</label>
 
         <div class="buttons">
@@ -822,7 +831,10 @@ var templateViewsMap = map[string]string{
 
 {{ define "content"}}
 <section class="page-header">
-    <h1>{{ .feed.Title }} ({{ .total }})</h1>
+    <h1>
+        <a href="{{ .feed.SiteURL | safeURL  }}" title="{{ .feed.SiteURL }}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" data-original-link="true">{{ .feed.Title }}</a> 
+        ({{ .total }})
+    </h1>
     <ul>
         {{ if .entries }}
         <li>
@@ -1310,6 +1322,7 @@ var templateViewsMap = map[string]string{
 
     <label><input type="checkbox" name="keyboard_shortcuts" value="1" {{ if .form.KeyboardShortcuts }}checked{{ end }}> {{ t "form.prefs.label.keyboard_shortcuts" }}</label>
 
+    <label>{{t "form.prefs.label.custom_css" }}</label><textarea name="custom_css" cols="40" rows="5">{{ .form.CustomCSS }}</textarea>
     <div class="buttons">
         <button type="submit" class="button button-primary" data-label-loading="{{ t "form.submit.saving" }}">{{ t "action.update" }}</button>
     </div>
@@ -1533,18 +1546,18 @@ var templateViewsMapChecksums = map[string]string{
 	"add_subscription":    "0dbea93b6fc07423fa066122ad960c69616b829533371a2dbadec1e22d4f1ae0",
 	"api_keys":            "27d401b31a72881d5232486ba17eb47edaf5246eaedce81de88698c15ebb2284",
 	"bookmark_entries":    "65588da78665699dd3f287f68325e9777d511f1a57fee4131a5bb6d00bb68df8",
-	"categories":          "7a927a2c28ae60c995df9d94220153418d3bd31bf35e0800980a215b1a6a80c7",
+	"categories":          "21d2efb06d8330ab1fd363449c7144ce7191779bafa33d5c0cec63f2c443ec03",
 	"category_entries":    "dee7b9cd60c6c46f01dd4289940679df31c1fce28ce4aa7249fa459023e1eeb4",
-	"category_feeds":      "527c2ffbc4fcec775071424ba1022ae003525dba53a28cc41f48fb7b30aa984b",
+	"category_feeds":      "02b255603dc58122afbbcce573e88d648cad176b9cd0a7bba7e07f95694de75d",
 	"choose_subscription": "84c9730cadd78e6ee5a6b4c499aab33acddb4324ac01924d33387543eec4d702",
 	"create_api_key":      "5f74d4e92a6684927f5305096378c8be278159a5cd88ce652c7be3280a7d1685",
 	"create_category":     "6b22b5ce51abf4e225e23a79f81be09a7fb90acb265e93a8faf9446dff74018d",
 	"create_user":         "9b73a55233615e461d1f07d99ad1d4d3b54532588ab960097ba3e090c85aaf3a",
 	"edit_category":       "b1c0b38f1b714c5d884edcd61e5b5295a5f1c8b71c469b35391e4dcc97cc6d36",
-	"edit_feed":           "cc0b5dbb73f81398410958b41771ed38246bc7ae4bd548228f0d48c49a598c2a",
+	"edit_feed":           "635bb8f7b927f3216ccd35cc6d9edd4b2af96e8677a14766a86fb77fa9fb4e38",
 	"edit_user":           "c692db9de1a084c57b93e95a14b041d39bf489846cbb91fc982a62b72b77062a",
 	"entry":               "d8c30d412d58e14c946ba682166f7c582948e7b0f657d04dcbc3d004267627bb",
-	"feed_entries":        "9c70b82f55e4b311eff20be1641733612e3c1b406ce8010861e4c417d97b6dcc",
+	"feed_entries":        "614357a9369237e54be45b40c516fe70a751bfb4311660746ae229e6be88fdac",
 	"feeds":               "ec7d3fa96735bd8422ba69ef0927dcccddc1cc51327e0271f0312d3f881c64fd",
 	"history_entries":     "93c0c4cc541eec7f07f5c2634f250ea82ac64024939179276b6f636b72c189bf",
 	"import":              "1b59b3bd55c59fcbc6fbb346b414dcdd26d1b4e0c307e437bb58b3f92ef01ad1",
@@ -1552,7 +1565,7 @@ var templateViewsMapChecksums = map[string]string{
 	"login":               "79ff2ca488c0a19b37c8fa227a21f73e94472eb357a51a077197c852f7713f11",
 	"search_entries":      "274950d03298c24f3942e209c0faed580a6d57be9cf76a6c236175a7e766ac6a",
 	"sessions":            "5d5c677bddbd027e0b0c9f7a0dd95b66d9d95b4e130959f31fb955b926c2201c",
-	"settings":            "d949ecdd28a33eadafaa3a727e548b3466c5aa44b0a4bbf86cc49784704ff7f6",
+	"settings":            "3ab566c3220c62edc3edc51f2e93c1101b728e9f62f52f23de6bc6322d86aeb6",
 	"shared_entries":      "19caea053664220bb9519df295eb2a17cf5836eaa9104b7ee24c60b88bb524e9",
 	"unread_entries":      "e38f7ffce17dfad3151b08cd33771a2cefe8ca9db42df04fc98bd1d675dd6075",
 	"users":               "d7ff52efc582bbad10504f4a04fa3adcc12d15890e45dff51cac281e0c446e45",

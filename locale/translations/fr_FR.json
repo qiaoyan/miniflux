@@ -82,7 +82,8 @@
     "page.starred.title": "Favoris",
     "page.categories.title": "Catégories",
     "page.categories.no_feed": "Aucun abonnement.",
-    "page.categories.feeds": "Voir les abonnements",
+    "page.categories.entries": "Articles",
+    "page.categories.feeds": "Abonnements",
     "page.categories.feed_count": [
         "Il y a %d abonnement.",
         "Il y a %d abonnements."
@@ -144,6 +145,7 @@
     "page.keyboard_shortcuts.open_comments": "Ouvrir le lien des commentaires",
     "page.keyboard_shortcuts.open_comments_same_window": "Ouvrir le lien des commentaires dans l'onglet en cours",
     "page.keyboard_shortcuts.toggle_read_status": "Basculer entre lu/non lu",
+    "page.keyboard_shortcuts.refresh_all_feeds": "Actualiser les abonnements en arrière-plan",
     "page.keyboard_shortcuts.mark_page_as_read": "Marquer la page actuelle comme lu",
     "page.keyboard_shortcuts.download_content": "Télécharger le contenu original",
     "page.keyboard_shortcuts.toggle_bookmark_status": "Ajouter/Enlever favoris",
@@ -241,6 +243,7 @@
     "form.feed.label.user_agent": "Remplacer l'agent utilisateur par défaut",
     "form.feed.label.scraper_rules": "Règles pour récupérer le contenu original",
     "form.feed.label.rewrite_rules": "Règles de réécriture",
+    "form.feed.label.ignore_http_cache": "Ignore cache HTTP",
     "form.feed.label.disabled": "Ne pas actualiser ce flux",
     "form.category.label.title": "Titre",
     "form.user.label.username": "Nom d'utilisateur",
@@ -254,6 +257,7 @@
     "form.prefs.select.older_first": "Ancien éléments en premier",
     "form.prefs.select.recent_first": "Éléments récents en premier",
     "form.prefs.label.keyboard_shortcuts": "Activer les raccourcis clavier",
+    "form.prefs.label.custom_css": "CSS personnalisé",
     "form.import.label.file": "Fichier OPML",
     "form.import.label.url": "URL",
     "form.integration.fever_activate": "Activer l'API de Fever",

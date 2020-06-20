@@ -82,7 +82,8 @@
     "page.starred.title": "Lesezeichen",
     "page.categories.title": "Kategorien",
     "page.categories.no_feed": "Kein Abonnement.",
-    "page.categories.feeds": "Siehe Abonnements",
+    "page.categories.entries": "Artikel",
+    "page.categories.feeds": "Abonnements",
     "page.categories.feed_count": [
         "Es gibt %d Abonnement.",
         "Es gibt %d Abonnements."
@@ -144,6 +145,7 @@
     "page.keyboard_shortcuts.open_comments": "Kommentare öffnen",
     "page.keyboard_shortcuts.open_comments_same_window": "Öffne den Kommentare-Link in der aktuellen Registerkarte",
     "page.keyboard_shortcuts.toggle_read_status": "Gewählten Artikel als gelesen/ungelesen markieren",
+    "page.keyboard_shortcuts.refresh_all_feeds": "Alle Abonnements im Hintergrund aktualisieren",
     "page.keyboard_shortcuts.mark_page_as_read": "Aktuelle Seite als gelesen markieren",
     "page.keyboard_shortcuts.download_content": "Vollständigen Inhalt herunterladen",
     "page.keyboard_shortcuts.toggle_bookmark_status": "Lesezeichen hinzufügen/entfernen",
@@ -241,6 +243,7 @@
     "form.feed.label.user_agent": "Standardbenutzeragenten überschreiben",
     "form.feed.label.scraper_rules": "Extraktionsregeln",
     "form.feed.label.rewrite_rules": "Umschreiberegeln",
+    "form.feed.label.ignore_http_cache": "Ignoriere HTTP-cache",
     "form.feed.label.disabled": "Dieses Abonnement nicht aktualisieren",
     "form.category.label.title": "Titel",
     "form.user.label.username": "Benutzername",
@@ -254,6 +257,7 @@
     "form.prefs.select.older_first": "Älteste Artikel zuerst",
     "form.prefs.select.recent_first": "Neueste Artikel zuerst",
     "form.prefs.label.keyboard_shortcuts": "Tastaturkürzel aktivieren",
+    "form.prefs.label.custom_css": "Benutzerdefiniertes CSS",
     "form.import.label.file": "OPML Datei",
     "form.import.label.url": "URL",
     "form.integration.fever_activate": "Fever API aktivieren",

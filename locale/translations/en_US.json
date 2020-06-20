@@ -82,7 +82,8 @@
     "page.starred.title": "Starred",
     "page.categories.title": "Categories",
     "page.categories.no_feed": "No feed.",
-    "page.categories.feeds": "See subscriptions",
+    "page.categories.entries": "Articles",
+    "page.categories.feeds": "Subscriptions",
     "page.categories.feed_count": [
         "There is %d feed.",
         "There are %d feeds."
@@ -144,6 +145,7 @@
     "page.keyboard_shortcuts.open_comments": "Open comments link",
     "page.keyboard_shortcuts.open_comments_same_window": "Open comments link in current tab",
     "page.keyboard_shortcuts.toggle_read_status": "Toggle read/unread",
+    "page.keyboard_shortcuts.refresh_all_feeds": "Refresh all feeds in the background",
     "page.keyboard_shortcuts.mark_page_as_read": "Mark current page as read",
     "page.keyboard_shortcuts.download_content": "Download original content",
     "page.keyboard_shortcuts.toggle_bookmark_status": "Toggle bookmark",
@@ -241,6 +243,7 @@
     "form.feed.label.user_agent": "Override Default User Agent",
     "form.feed.label.scraper_rules": "Scraper Rules",
     "form.feed.label.rewrite_rules": "Rewrite Rules",
+    "form.feed.label.ignore_http_cache": "Ignore HTTP cache",
     "form.feed.label.disabled": "Do not refresh this feed",
     "form.category.label.title": "Title",
     "form.user.label.username": "Username",
@@ -254,6 +257,7 @@
     "form.prefs.select.older_first": "Older entries first",
     "form.prefs.select.recent_first": "Recent entries first",
     "form.prefs.label.keyboard_shortcuts": "Enable keyboard shortcuts",
+    "form.prefs.label.custom_css": "Custom CSS",
     "form.import.label.file": "OPML file",
     "form.import.label.url": "URL",
     "form.integration.fever_activate": "Activate Fever API",

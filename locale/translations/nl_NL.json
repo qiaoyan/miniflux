@@ -82,7 +82,8 @@
     "page.starred.title": "Favorieten",
     "page.categories.title": "Categorieën",
     "page.categories.no_feed": "Geen feeds.",
-    "page.categories.feeds": "Zie abonnementen",
+    "page.categories.entries": "Lidwoord",
+    "page.categories.feeds": "Abonnementen",
     "page.categories.feed_count": [
         "Er is %d feed.",
         "Er zijn %d feeds."
@@ -145,6 +146,7 @@
     "page.keyboard_shortcuts.open_comments": "Open opmerkingen link",
     "page.keyboard_shortcuts.open_comments_same_window": "Open de reactiekoppeling op het huidige tabblad",
     "page.keyboard_shortcuts.toggle_read_status": "Markeer gelezen/ongelezen",
+    "page.keyboard_shortcuts.refresh_all_feeds": "Vernieuw alle feeds in de achtergrond",
     "page.keyboard_shortcuts.mark_page_as_read": "Markeer deze pagina als gelezen",
     "page.keyboard_shortcuts.download_content": "Download originele content",
     "page.keyboard_shortcuts.toggle_bookmark_status": "Ster toevoegen/weghalen",
@@ -241,6 +243,7 @@
     "form.feed.label.user_agent": "Standaard User Agent overschrijven",
     "form.feed.label.scraper_rules": "Scraper regels",
     "form.feed.label.rewrite_rules": "Rewrite regels",
+    "form.feed.label.ignore_http_cache": "Negeer HTTP-cache",
     "form.feed.label.disabled": "Vernieuw deze feed niet",
     "form.category.label.title": "Naam",
     "form.user.label.username": "Gebruikersnaam",
@@ -254,6 +257,7 @@
     "form.prefs.select.older_first": "Oudere items eerst",
     "form.prefs.select.recent_first": "Recente items eerst",
     "form.prefs.label.keyboard_shortcuts": "Schakel sneltoetsen in",
+    "form.prefs.label.custom_css": "Aangepaste CSS",
     "form.import.label.file": "OPML-bestand",
     "form.import.label.url": "URL",
     "form.integration.fever_activate": "Activeer Fever API",
