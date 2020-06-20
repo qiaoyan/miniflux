@@ -92,6 +92,7 @@ func (h *handler) getFeedEntries(w http.ResponseWriter, r *http.Request) {
 	builder.WithOrder(order)
 	builder.WithDirection(direction)
 	builder.WithOffset(offset)
+	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithLimit(limit)
 	configureFilters(builder, r)
 
@@ -146,6 +147,7 @@ func (h *handler) getCategoryEntries(w http.ResponseWriter, r *http.Request) {
 	builder.WithOrder(order)
 	builder.WithDirection(direction)
 	builder.WithOffset(offset)
+	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithLimit(limit)
 	configureFilters(builder, r)
 
@@ -197,6 +199,7 @@ func (h *handler) getEntries(w http.ResponseWriter, r *http.Request) {
 	builder.WithOrder(order)
 	builder.WithDirection(direction)
 	builder.WithOffset(offset)
+	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithLimit(limit)
 	configureFilters(builder, r)
 
