@@ -92,62 +92,6 @@ func (h *handler) getFeedEntries(w http.ResponseWriter, r *http.Request) {
 	builder.WithOrder(order)
 	builder.WithDirection(direction)
 	builder.WithOffset(offset)
-	builder.WithoutStatus(model.EntryStatusRemoved)
-	builder.WithLimit(limit)
-	configureFilters(builder, r)
-
-	entries, err := builder.GetEntries()
-	if err != nil {
-		json.ServerError(w, r, err)
-		return
-	}
-
-	count, err := builder.CountEntries()
-	if err != nil {
-		json.ServerError(w, r, err)
-		return
-	}
-
-	json.OK(w, r, &entriesResponse{Total: count, Entries: entries})
-}
-
-func (h *handler) getCategoryEntries(w http.ResponseWriter, r *http.Request) {
-	categoryID := request.RouteInt64Param(r, "categoryID")
-
-	status := request.QueryStringParam(r, "status", "")
-	if status != "" {
-		if err := model.ValidateEntryStatus(status); err != nil {
-			json.BadRequest(w, r, err)
-			return
-		}
-	}
-
-	order := request.QueryStringParam(r, "order", model.DefaultSortingOrder)
-	if err := model.ValidateEntryOrder(order); err != nil {
-		json.BadRequest(w, r, err)
-		return
-	}
-
-	direction := request.QueryStringParam(r, "direction", model.DefaultSortingDirection)
-	if err := model.ValidateDirection(direction); err != nil {
-		json.BadRequest(w, r, err)
-		return
-	}
-
-	limit := request.QueryIntParam(r, "limit", 100)
-	offset := request.QueryIntParam(r, "offset", 0)
-	if err := model.ValidateRange(offset, limit); err != nil {
-		json.BadRequest(w, r, err)
-		return
-	}
-
-	builder := h.store.NewEntryQueryBuilder(request.UserID(r))
-	builder.WithCategoryID(categoryID)
-	builder.WithStatus(status)
-	builder.WithOrder(order)
-	builder.WithDirection(direction)
-	builder.WithOffset(offset)
-	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithLimit(limit)
 	configureFilters(builder, r)
 
@@ -199,7 +143,6 @@ func (h *handler) getEntries(w http.ResponseWriter, r *http.Request) {
 	builder.WithOrder(order)
 	builder.WithDirection(direction)
 	builder.WithOffset(offset)
-	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithLimit(limit)
 	configureFilters(builder, r)
 
