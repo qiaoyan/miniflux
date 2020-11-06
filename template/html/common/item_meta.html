@@ -2,7 +2,7 @@
 <div class="item-meta">
     <ul class="item-meta-info">
         <li>
-            <a href="{{ route "feedEntries" "feedID" .entry.Feed.ID }}" title="{{ .entry.Feed.SiteURL }}">{{ truncate .entry.Feed.Title 35 }}</a>
+            <a href="{{ route "feedEntries" "feedID" .entry.Feed.ID }}" title="{{ .entry.Feed.SiteURL }}" data-feed-link="true">{{ truncate .entry.Feed.Title 35 }}</a>
         </li>
         <li>
             <time datetime="{{ isodate .entry.Date }}" title="{{ isodate .entry.Date }}">{{ elapsed .user.Timezone .entry.Date }}</time>
@@ -58,7 +58,7 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 referrerpolicy="no-referrer"
-                data-original-link="true">{{ template "icon_original" }}<span class="icon-label">{{ t "entry.original.label" }}</span></a>
+                data-original-link="true">{{ template "icon_external_link" }}<span class="icon-label">{{ t "entry.external_link.label" }}</span></a>
         </li>
         {{ if .entry.CommentsURL }}
             <li>

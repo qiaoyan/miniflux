@@ -391,12 +391,23 @@ function goToNext() {
 
 function goToFeedOrFeeds() {
     if (isEntry()) {
+        goToFeed();
+    } else {
+        goToPage('feeds');
+    }
+}
+
+function goToFeed() {
+    if (isEntry()) {
         let feedAnchor = document.querySelector("span.entry-website a");
         if (feedAnchor !== null) {
             window.location.href = feedAnchor.href;
         }
     } else {
-        goToPage('feeds');
+        let currentItemFeed = document.querySelector(".current-item a[data-feed-link]");
+        if (currentItemFeed !== null) {
+            window.location.href = currentItemFeed.getAttribute("href");
+        }
     }
 }
 
@@ -461,6 +472,13 @@ function goToNextListItem() {
 
             break;
         }
+    }
+}
+
+function scrollToCurrentItem() {
+    let currentItem = document.querySelector(".current-item");
+    if (currentItem !== null) {
+        DomHelper.scrollPageTo(currentItem, true);
     }
 }
 

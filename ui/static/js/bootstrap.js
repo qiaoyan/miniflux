@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
         keyboardHandler.on("n", () => goToNext());
         keyboardHandler.on("h", () => goToPage("previous"));
         keyboardHandler.on("l", () => goToPage("next"));
+        keyboardHandler.on("z t", () => scrollToCurrentItem());
         keyboardHandler.on("o", () => openSelectedItem());
         keyboardHandler.on("v", () => openOriginalLink());
         keyboardHandler.on("V", () => openOriginalLink(true));
@@ -27,6 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
         keyboardHandler.on("s", () => handleSaveEntry());
         keyboardHandler.on("d", () => handleFetchOriginalContent());
         keyboardHandler.on("f", () => handleBookmark());
+        keyboardHandler.on("F", () => goToFeed());
         keyboardHandler.on("R", () => handleRefreshAllFeeds());
         keyboardHandler.on("?", () => showKeyboardShortcuts());
         keyboardHandler.on("#", () => unsubscribeFromFeed());
