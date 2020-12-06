@@ -52,6 +52,7 @@ const (
 	defaultHTTPClientTimeout                  = 20
 	defaultHTTPClientMaxBodySize              = 15
 	defaultHTTPClientProxy                    = ""
+	defaultHTTPClientUserAgent                = ""
 	defaultAuthProxyHeader                    = ""
 	defaultAuthProxyUserCreation              = false
 	defaultMaintenanceMode                    = false
@@ -105,6 +106,7 @@ type Options struct {
 	httpClientTimeout                  int
 	httpClientMaxBodySize              int64
 	httpClientProxy                    string
+	httpClientUserAgent                string
 	authProxyHeader                    string
 	authProxyUserCreation              bool
 	maintenanceMode                    bool
@@ -164,6 +166,7 @@ func NewOptions() *Options {
 		metricsCollector:                   defaultMetricsCollector,
 		metricsRefreshInterval:             defaultMetricsRefreshInterval,
 		metricsAllowedNetworks:             []string{defaultMetricsAllowedNetworks},
+		httpClientUserAgent:                defaultHTTPClientUserAgent,
 	}
 }
 
@@ -422,6 +425,11 @@ func (o *Options) MetricsAllowedNetworks() []string {
 	return o.metricsAllowedNetworks
 }
 
+// HTTPClientUserAgent returns the global User-Agent header for miniflux.
+func (o *Options) HTTPClientUserAgent() string {
+	return o.httpClientUserAgent
+}
+
 func (o *Options) String() string {
 	var builder strings.Builder
 	builder.WriteString(fmt.Sprintf("LOG_DATE_TIME: %v\n", o.logDateTime))
@@ -466,6 +474,7 @@ func (o *Options) String() string {
 	builder.WriteString(fmt.Sprintf("HTTP_CLIENT_TIMEOUT: %v\n", o.httpClientTimeout))
 	builder.WriteString(fmt.Sprintf("HTTP_CLIENT_MAX_BODY_SIZE: %v\n", o.httpClientMaxBodySize))
 	builder.WriteString(fmt.Sprintf("HTTP_CLIENT_PROXY: %v\n", o.httpClientProxy))
+	builder.WriteString(fmt.Sprintf("HTTP_CLIENT_USER_AGENT: %v\n", o.httpClientUserAgent))
 	builder.WriteString(fmt.Sprintf("AUTH_PROXY_HEADER: %v\n", o.authProxyHeader))
 	builder.WriteString(fmt.Sprintf("AUTH_PROXY_USER_CREATION: %v\n", o.authProxyUserCreation))
 	builder.WriteString(fmt.Sprintf("MAINTENANCE_MODE: %v\n", o.maintenanceMode))

@@ -74,7 +74,7 @@ var translations = map[string]string{
     "entry.scraper.label": "Herunterladen",
     "entry.scraper.title": "Inhalt herunterladen",
     "entry.scraper.completed": "Erledigt!",
-    "entry.external_link.label": "Externer link",
+    "entry.external_link.label": "Externer Link",
     "entry.comments.label": "Kommentare",
     "entry.comments.title": "Kommentare anzeigen",
     "entry.share.label": "Teilen",
@@ -2786,8 +2786,8 @@ var translations = map[string]string{
     "entry.status.toast.unread": "Marcado como não lido",
     "entry.status.toast.read": "Marcado como lido",
     "entry.status.title": "Modificar estado deste item",
-    "entry.bookmark.toggle.on": "Marcar",
-    "entry.bookmark.toggle.off": "Desmarcar",
+    "entry.bookmark.toggle.on": "Favoritar",
+    "entry.bookmark.toggle.off": "Remover dos Favoritos",
     "entry.bookmark.toast.on": "Favoritado",
     "entry.bookmark.toast.off": "Desfavoritado",
     "entry.state.saving": "Salvando...",
@@ -2808,8 +2808,8 @@ var translations = map[string]string{
     "entry.shared_entry.title": "Abrir link público",
     "entry.shared_entry.label": "Compartilhar",
     "entry.estimated_reading_time": [
-        "%d minuto lido",
-        "%d minutos lidos"
+        "Leitura de %d minuto",
+        "Leitura de %d minutos"
     ],
     "page.shared_entries.title": "Itens compartilhados",
     "page.unread.title": "Não lídos",
@@ -3740,7 +3740,7 @@ var translations = map[string]string{
 }
 
 var translationsChecksums = map[string]string{
-	"de_DE": "d8b49d111bf258226dbf7e0db14116469feb2f44dcc7bfcd323a29fb9badfdaf",
+	"de_DE": "66d6feafa5f92c35b10f8c07aa693afe1ea7dca73708cdebfc4cf3edb0478512",
 	"en_US": "fa1771f155b439b46f282069a1628dc95d4170a5d7db14c1b90fa753936e7856",
 	"es_ES": "5b65c97c14e4b1f833ce6047be4b8b29bcb777d7a7a21420d1fb619584746649",
 	"fr_FR": "b58d74f73de2e775cc3f883f2fb19451e306ff32772f2fa8cb3c630d9df395d3",
@@ -3748,7 +3748,7 @@ var translationsChecksums = map[string]string{
 	"ja_JP": "9a3d1484c46be56286f9abf06b596576a3ae44f571d72a40d2eba5bfb02dd921",
 	"nl_NL": "3b91987a9f6640e827c73ca11bb0f9bc58ff79359e792038746e273cd7ae546d",
 	"pl_PL": "ff1dab97559d16331c374c63a91000b0c27f796bd96595e34ca324eb68a7c06e",
-	"pt_BR": "b6def8d61a5c7ea159f378837e77052d7a9221c54d7685c4b6a63d50e22f5196",
+	"pt_BR": "524c0f0dcd81988acd286900481e1a2e0ca9cf789d752e22da8bd5fe31b6acf3",
 	"ru_RU": "805c698b8a053860f737a145acc3616c67c8d80bf1de89bf6bb27fee40e885f2",
 	"zh_CN": "0c6be862c7bd997337696161a1c1d3d2ec5c7adab9c33f29c09d906fcc015a79",
 }
