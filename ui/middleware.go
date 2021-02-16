@@ -140,6 +140,7 @@ func (m *middleware) isPublicRoute(r *http.Request) bool {
 		"appIcon",
 		"favicon",
 		"webManifest",
+		"appleAppSiteAssociation",
 		"robots",
 		"sharedEntry",
 		"healthcheck":
