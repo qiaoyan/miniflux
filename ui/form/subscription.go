@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"miniflux.app/errors"
+	"miniflux.app/validator"
 )
 
 // SubscriptionForm represents the subscription form.
@@ -32,6 +33,18 @@ func (s *SubscriptionForm) Validate() error {
 		return errors.NewLocalizedError("error.feed_mandatory_fields")
 	}
 
+	if !validator.IsValidURL(s.URL) {
+		return errors.NewLocalizedError("error.invalid_feed_url")
+	}
+
+	if !validator.IsValidRegex(s.BlocklistRules) {
+		return errors.NewLocalizedError("error.feed_invalid_blocklist_rule")
+	}
+
+	if !validator.IsValidRegex(s.KeeplistRules) {
+		return errors.NewLocalizedError("error.feed_invalid_keeplist_rule")
+	}
+
 	return nil
 }
 
@@ -44,8 +57,9 @@ func NewSubscriptionForm(r *http.Request) *SubscriptionForm {
 
 	return &SubscriptionForm{
 		URL:            r.FormValue("url"),
-		Crawler:        r.FormValue("crawler") == "1",
 		CategoryID:     int64(categoryID),
+		Crawler:        r.FormValue("crawler") == "1",
+		FetchViaProxy:  r.FormValue("fetch_via_proxy") == "1",
 		UserAgent:      r.FormValue("user_agent"),
 		Username:       r.FormValue("feed_username"),
 		Password:       r.FormValue("feed_password"),

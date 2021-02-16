@@ -7,12 +7,13 @@ package storage // import "miniflux.app/storage"
 import (
 	"database/sql"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"miniflux.app/logger"
 	"miniflux.app/model"
 
-	"github.com/lib/pq/hstore"
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -53,33 +54,52 @@ func (s *Storage) AnotherUserExists(userID int64, username string) bool {
 }
 
 // CreateUser creates a new user.
-func (s *Storage) CreateUser(user *model.User) (err error) {
-	password := ""
-	extra := hstore.Hstore{Map: make(map[string]sql.NullString)}
-
-	if user.Password != "" {
-		password, err = hashPassword(user.Password)
+func (s *Storage) CreateUser(userCreationRequest *model.UserCreationRequest) (*model.User, error) {
+	var hashedPassword string
+	if userCreationRequest.Password != "" {
+		var err error
+		hashedPassword, err = hashPassword(userCreationRequest.Password)
 		if err != nil {
-			return err
-		}
-	}
-
-	if len(user.Extra) > 0 {
-		for key, value := range user.Extra {
-			extra.Map[key] = sql.NullString{String: value, Valid: true}
+			return nil, err
 		}
 	}
 
 	query := `
 		INSERT INTO users
-			(username, password, is_admin, extra)
+			(username, password, is_admin, google_id, openid_connect_id)
 		VALUES
-			(LOWER($1), $2, $3, $4)
+			(LOWER($1), $2, $3, $4, $5)
 		RETURNING
-			id, username, is_admin, language, theme, timezone, entry_direction, entries_per_page, keyboard_shortcuts, show_reading_time, entry_swipe
+			id,
+			username,
+			is_admin,
+			language,
+			theme,
+			timezone,
+			entry_direction,
+			entries_per_page,
+			keyboard_shortcuts,
+			show_reading_time,
+			entry_swipe,
+			stylesheet,
+			google_id,
+			openid_connect_id
 	`
 
-	err = s.db.QueryRow(query, user.Username, password, user.IsAdmin, extra).Scan(
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf(`store: unable to start transaction: %v`, err)
+	}
+
+	var user model.User
+	err = tx.QueryRow(
+		query,
+		userCreationRequest.Username,
+		hashedPassword,
+		userCreationRequest.IsAdmin,
+		userCreationRequest.GoogleID,
+		userCreationRequest.OpenIDConnectID,
+	).Scan(
 		&user.ID,
 		&user.Username,
 		&user.IsAdmin,
@@ -91,34 +111,32 @@ func (s *Storage) CreateUser(user *model.User) (err error) {
 		&user.KeyboardShortcuts,
 		&user.ShowReadingTime,
 		&user.EntrySwipe,
+		&user.Stylesheet,
+		&user.GoogleID,
+		&user.OpenIDConnectID,
 	)
 	if err != nil {
-		return fmt.Errorf(`store: unable to create user: %v`, err)
+		tx.Rollback()
+		return nil, fmt.Errorf(`store: unable to create user: %v`, err)
 	}
 
-	s.CreateCategory(&model.Category{Title: "All", UserID: user.ID})
-	s.CreateIntegration(user.ID)
-	return nil
-}
-
-// UpdateExtraField updates an extra field of the given user.
-func (s *Storage) UpdateExtraField(userID int64, field, value string) error {
-	query := fmt.Sprintf(`UPDATE users SET extra = extra || hstore('%s', $1) WHERE id=$2`, field)
-	_, err := s.db.Exec(query, value, userID)
+	_, err = tx.Exec(`INSERT INTO categories (user_id, title) VALUES ($1, $2)`, user.ID, "All")
 	if err != nil {
-		return fmt.Errorf(`store: unable to update user extra field: %v`, err)
+		tx.Rollback()
+		return nil, fmt.Errorf(`store: unable to create user default category: %v`, err)
 	}
-	return nil
-}
 
-// RemoveExtraField deletes an extra field for the given user.
-func (s *Storage) RemoveExtraField(userID int64, field string) error {
-	query := `UPDATE users SET extra = delete(extra, $1) WHERE id=$2`
-	_, err := s.db.Exec(query, field, userID)
+	_, err = tx.Exec(`INSERT INTO integrations (user_id) VALUES ($1)`, user.ID)
 	if err != nil {
-		return fmt.Errorf(`store: unable to remove user extra field: %v`, err)
+		tx.Rollback()
+		return nil, fmt.Errorf(`store: unable to create integration row: %v`, err)
 	}
-	return nil
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf(`store: unable to commit transaction: %v`, err)
+	}
+
+	return &user, nil
 }
 
 // UpdateUser updates a user.
@@ -141,9 +159,12 @@ func (s *Storage) UpdateUser(user *model.User) error {
 				entries_per_page=$8,
 				keyboard_shortcuts=$9,
 				show_reading_time=$10,
-				entry_swipe=$11
+				entry_swipe=$11,
+				stylesheet=$12,
+				google_id=$13,
+				openid_connect_id=$14
 			WHERE
-				id=$12
+				id=$15
 		`
 
 		_, err = s.db.Exec(
@@ -159,6 +180,9 @@ func (s *Storage) UpdateUser(user *model.User) error {
 			user.KeyboardShortcuts,
 			user.ShowReadingTime,
 			user.EntrySwipe,
+			user.Stylesheet,
+			user.GoogleID,
+			user.OpenIDConnectID,
 			user.ID,
 		)
 		if err != nil {
@@ -176,9 +200,12 @@ func (s *Storage) UpdateUser(user *model.User) error {
 				entries_per_page=$7,
 				keyboard_shortcuts=$8,
 				show_reading_time=$9,
-				entry_swipe=$10
+				entry_swipe=$10,
+				stylesheet=$11,
+				google_id=$12,
+				openid_connect_id=$13
 			WHERE
-				id=$11
+				id=$14
 		`
 
 		_, err := s.db.Exec(
@@ -193,16 +220,15 @@ func (s *Storage) UpdateUser(user *model.User) error {
 			user.KeyboardShortcuts,
 			user.ShowReadingTime,
 			user.EntrySwipe,
+			user.Stylesheet,
+			user.GoogleID,
+			user.OpenIDConnectID,
 			user.ID,
 		)
 
 		if err != nil {
 			return fmt.Errorf(`store: unable to update user: %v`, err)
 		}
-	}
-
-	if err := s.UpdateExtraField(user.ID, "custom_css", user.Extra["custom_css"]); err != nil {
-		return fmt.Errorf(`store: unable to update user custom css: %v`, err)
 	}
 
 	return nil
@@ -234,7 +260,9 @@ func (s *Storage) UserByID(userID int64) (*model.User, error) {
 			show_reading_time,
 			entry_swipe,
 			last_login_at,
-			extra
+			stylesheet,
+			google_id,
+			openid_connect_id
 		FROM
 			users
 		WHERE
@@ -259,7 +287,9 @@ func (s *Storage) UserByUsername(username string) (*model.User, error) {
 			show_reading_time,
 			entry_swipe,
 			last_login_at,
-			extra
+			stylesheet,
+			google_id,
+			openid_connect_id
 		FROM
 			users
 		WHERE
@@ -268,8 +298,8 @@ func (s *Storage) UserByUsername(username string) (*model.User, error) {
 	return s.fetchUser(query, username)
 }
 
-// UserByExtraField finds a user by an extra field value.
-func (s *Storage) UserByExtraField(field, value string) (*model.User, error) {
+// UserByField finds a user by a field value.
+func (s *Storage) UserByField(field, value string) (*model.User, error) {
 	query := `
 		SELECT
 			id,
@@ -284,13 +314,22 @@ func (s *Storage) UserByExtraField(field, value string) (*model.User, error) {
 			show_reading_time,
 			entry_swipe,
 			last_login_at,
-			extra
+			stylesheet,
+			google_id,
+			openid_connect_id
 		FROM
 			users
 		WHERE
-			extra->$1=$2
+			%s=$1
 	`
-	return s.fetchUser(query, field, value)
+	return s.fetchUser(fmt.Sprintf(query, pq.QuoteIdentifier(field)), value)
+}
+
+// AnotherUserWithFieldExists returns true if a user has the value set for the given field.
+func (s *Storage) AnotherUserWithFieldExists(userID int64, field, value string) bool {
+	var result bool
+	s.db.QueryRow(fmt.Sprintf(`SELECT true FROM users WHERE id <> $1 AND %s=$2`, pq.QuoteIdentifier(field)), userID, value).Scan(&result)
+	return result
 }
 
 // UserByAPIKey returns a User from an API Key.
@@ -309,7 +348,9 @@ func (s *Storage) UserByAPIKey(token string) (*model.User, error) {
 			u.show_reading_time,
 			u.entry_swipe,
 			u.last_login_at,
-			u.extra
+			u.stylesheet,
+			u.google_id,
+			u.openid_connect_id
 		FROM
 			users u
 		LEFT JOIN
@@ -321,9 +362,7 @@ func (s *Storage) UserByAPIKey(token string) (*model.User, error) {
 }
 
 func (s *Storage) fetchUser(query string, args ...interface{}) (*model.User, error) {
-	var extra hstore.Hstore
-
-	user := model.NewUser()
+	var user model.User
 	err := s.db.QueryRow(query, args...).Scan(
 		&user.ID,
 		&user.Username,
@@ -337,7 +376,9 @@ func (s *Storage) fetchUser(query string, args ...interface{}) (*model.User, err
 		&user.ShowReadingTime,
 		&user.EntrySwipe,
 		&user.LastLoginAt,
-		&extra,
+		&user.Stylesheet,
+		&user.GoogleID,
+		&user.OpenIDConnectID,
 	)
 
 	if err == sql.ErrNoRows {
@@ -346,33 +387,27 @@ func (s *Storage) fetchUser(query string, args ...interface{}) (*model.User, err
 		return nil, fmt.Errorf(`store: unable to fetch user: %v`, err)
 	}
 
-	for key, value := range extra.Map {
-		if value.Valid {
-			user.Extra[key] = value.String
-		}
-	}
-
-	return user, nil
+	return &user, nil
 }
 
 // RemoveUser deletes a user.
 func (s *Storage) RemoveUser(userID int64) error {
-	ts, err := s.db.Begin()
+	tx, err := s.db.Begin()
 	if err != nil {
 		return fmt.Errorf(`store: unable to start transaction: %v`, err)
 	}
 
-	if _, err := ts.Exec(`DELETE FROM users WHERE id=$1`, userID); err != nil {
-		ts.Rollback()
+	if _, err := tx.Exec(`DELETE FROM users WHERE id=$1`, userID); err != nil {
+		tx.Rollback()
 		return fmt.Errorf(`store: unable to remove user #%d: %v`, userID, err)
 	}
 
-	if _, err := ts.Exec(`DELETE FROM integrations WHERE user_id=$1`, userID); err != nil {
-		ts.Rollback()
+	if _, err := tx.Exec(`DELETE FROM integrations WHERE user_id=$1`, userID); err != nil {
+		tx.Rollback()
 		return fmt.Errorf(`store: unable to remove integration settings for user #%d: %v`, userID, err)
 	}
 
-	if err := ts.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return fmt.Errorf(`store: unable to commit transaction: %v`, err)
 	}
 
@@ -385,6 +420,7 @@ func (s *Storage) RemoveUserAsync(userID int64) {
 		deleteUserFeeds(s.db, userID)
 		s.db.Exec(`DELETE FROM users WHERE id=$1`, userID)
 		s.db.Exec(`DELETE FROM integrations WHERE user_id=$1`, userID)
+		logger.Debug(`[MASS DELETE] User #%d has been deleted (%d GoRoutines)`, userID, runtime.NumGoroutine())
 	}()
 }
 
@@ -404,7 +440,9 @@ func (s *Storage) Users() (model.Users, error) {
 			show_reading_time,
 			entry_swipe,
 			last_login_at,
-			extra
+			stylesheet,
+			google_id,
+			openid_connect_id
 		FROM
 			users
 		ORDER BY username ASC
@@ -417,8 +455,7 @@ func (s *Storage) Users() (model.Users, error) {
 
 	var users model.Users
 	for rows.Next() {
-		var extra hstore.Hstore
-		user := model.NewUser()
+		var user model.User
 		err := rows.Scan(
 			&user.ID,
 			&user.Username,
@@ -432,20 +469,16 @@ func (s *Storage) Users() (model.Users, error) {
 			&user.ShowReadingTime,
 			&user.EntrySwipe,
 			&user.LastLoginAt,
-			&extra,
+			&user.Stylesheet,
+			&user.GoogleID,
+			&user.OpenIDConnectID,
 		)
 
 		if err != nil {
 			return nil, fmt.Errorf(`store: unable to fetch users row: %v`, err)
 		}
 
-		for key, value := range extra.Map {
-			if value.Valid {
-				user.Extra[key] = value.String
-			}
-		}
-
-		users = append(users, user)
+		users = append(users, &user)
 	}
 
 	return users, nil
@@ -511,18 +544,18 @@ func deleteUserFeeds(db *sql.DB, userID int64) {
 
 	worker := func(jobs <-chan int64, results chan<- bool) {
 		for feedID := range jobs {
+			logger.Debug(`[MASS DELETE] Deleting feed #%d for user #%d (%d GoRoutines)`, feedID, userID, runtime.NumGoroutine())
 			deleteUserEntries(db, userID, feedID)
 			db.Exec(`DELETE FROM feeds WHERE id=$1`, feedID)
 			results <- true
 		}
 	}
 
-	const numWorkers = 3
 	numJobs := len(feedIDs)
 	jobs := make(chan int64, numJobs)
 	results := make(chan bool, numJobs)
 
-	for w := 0; w < numWorkers; w++ {
+	for w := 0; w < 2; w++ {
 		go worker(jobs, results)
 	}
 
@@ -537,8 +570,7 @@ func deleteUserFeeds(db *sql.DB, userID int64) {
 }
 
 func deleteUserEntries(db *sql.DB, userID int64, feedID int64) {
-	query := `SELECT id FROM entries WHERE user_id=$1 AND feed_id=$2`
-	rows, err := db.Query(query, userID, feedID)
+	rows, err := db.Query(`SELECT id FROM entries WHERE user_id=$1 AND feed_id=$2`, userID, feedID)
 	if err != nil {
 		logger.Error(`store: unable to get user feed entries: %v`, err)
 		return
@@ -548,25 +580,10 @@ func deleteUserEntries(db *sql.DB, userID int64, feedID int64) {
 	for rows.Next() {
 		var entryID int64
 		rows.Scan(&entryID)
-		deleteUserEnclosures(db, userID, entryID)
-		db.Exec(`DELETE FROM entries WHERE id=$1`, entryID)
-	}
-}
 
-func deleteUserEnclosures(db *sql.DB, userID int64, entryID int64) {
-	query := `SELECT id FROM enclosures WHERE user_id=$1 AND entry_id=$2`
-	rows, err := db.Query(query, userID, entryID)
-	if err != nil {
-		logger.Error(`store: unable to get user entry enclosures: %v`, err)
-		return
-	}
-	defer rows.Close()
+		logger.Debug(`[MASS DELETE] Deleting entry #%d for user #%d (%d GoRoutines)`, entryID, userID, runtime.NumGoroutine())
 
-	for rows.Next() {
-		var enclosureID int64
-		rows.Scan(&enclosureID)
-		go func() {
-			db.Exec(`DELETE FROM enclosures WHERE id=$1`, enclosureID)
-		}()
+		db.Exec(`DELETE FROM enclosures WHERE entry_id=$1 AND user_id=$2`, entryID, userID)
+		db.Exec(`DELETE FROM entries WHERE id=$1 AND user_id=$2`, entryID, userID)
 	}
 }

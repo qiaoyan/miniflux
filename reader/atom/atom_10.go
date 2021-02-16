@@ -6,6 +6,7 @@ package atom // import "miniflux.app/reader/atom"
 
 import (
 	"encoding/xml"
+	"html"
 	"strconv"
 	"strings"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"miniflux.app/model"
 	"miniflux.app/reader/date"
 	"miniflux.app/reader/media"
-	"miniflux.app/reader/sanitizer"
 	"miniflux.app/url"
 )
 
@@ -100,7 +100,7 @@ func (a *atom10Entry) Transform() *model.Entry {
 }
 
 func (a *atom10Entry) entryTitle() string {
-	return sanitizer.StripTags(a.Title.String())
+	return a.Title.String()
 }
 
 func (a *atom10Entry) entryContent() string {
@@ -236,5 +236,5 @@ func (a *atom10Text) String() string {
 		content = a.Data
 	}
 
-	return strings.TrimSpace(content)
+	return html.UnescapeString(strings.TrimSpace(content))
 }

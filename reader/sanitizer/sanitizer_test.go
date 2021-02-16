@@ -15,6 +15,16 @@ func TestValidInput(t *testing.T) {
 	}
 }
 
+func TestImgWithTextDataURL(t *testing.T) {
+	input := `<img src="data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==" alt="Example">`
+	expected := ``
+	output := Sanitize("http://example.org/", input)
+
+	if output != expected {
+		t.Errorf(`Wrong output: %s`, output)
+	}
+}
+
 func TestImgWithDataURL(t *testing.T) {
 	input := `<img src="data:image/gif;base64,test" alt="Example">`
 	expected := `<img src="data:image/gif;base64,test" alt="Example" loading="lazy">`
@@ -156,6 +166,16 @@ func TestInvalidNestedTag(t *testing.T) {
 func TestInvalidIFrame(t *testing.T) {
 	input := `<iframe src="http://example.org/"></iframe>`
 	expected := ``
+	output := Sanitize("http://example.com/", input)
+
+	if expected != output {
+		t.Errorf(`Wrong output: "%s" != "%s"`, expected, output)
+	}
+}
+
+func TestIFrameWithChildElements(t *testing.T) {
+	input := `<iframe src="https://www.youtube.com/"><p>test</p></iframe>`
+	expected := `<iframe src="https://www.youtube.com/" sandbox="allow-scripts allow-same-origin allow-popups" loading="lazy"></iframe>`
 	output := Sanitize("http://example.com/", input)
 
 	if expected != output {

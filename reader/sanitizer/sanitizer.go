@@ -24,11 +24,12 @@ var (
 
 // Sanitize returns safe HTML.
 func Sanitize(baseURL, input string) string {
-	tokenizer := html.NewTokenizer(bytes.NewBufferString(input))
 	var buffer bytes.Buffer
 	var tagStack []string
+	var parentTag string
 	blacklistedTagDepth := 0
 
+	tokenizer := html.NewTokenizer(bytes.NewBufferString(input))
 	for {
 		if tokenizer.Next() == html.ErrorToken {
 			err := tokenizer.Err()
@@ -46,9 +47,16 @@ func Sanitize(baseURL, input string) string {
 				continue
 			}
 
+			// An iframe element never has fallback content.
+			// See https://www.w3.org/TR/2010/WD-html5-20101019/the-iframe-element.html#the-iframe-element
+			if parentTag == "iframe" {
+				continue
+			}
+
 			buffer.WriteString(html.EscapeString(token.Data))
 		case html.StartTagToken:
 			tagName := token.DataAtom.String()
+			parentTag = tagName
 
 			if !isPixelTracker(tagName, token.Attr) && isValidTag(tagName) {
 				attrNames, htmlAttributes := sanitizeAttributes(baseURL, tagName, token.Attr)
@@ -111,7 +119,7 @@ func sanitizeAttributes(baseURL, tagName string, attributes []html.Attribute) ([
 				} else {
 					continue
 				}
-			} else if tagName == "img" && attribute.Key == "src" && strings.HasPrefix(attribute.Val, "data:") {
+			} else if tagName == "img" && attribute.Key == "src" && isValidDataAttribute(attribute.Val) {
 				value = attribute.Val
 			} else {
 				value, err = url.AbsoluteURL(baseURL, value)
@@ -479,4 +487,25 @@ func isValidWidthOrDensityDescriptor(value string) bool {
 
 	_, err := strconv.ParseFloat(value[0:len(value)-1], 32)
 	return err == nil
+}
+
+func isValidDataAttribute(value string) bool {
+	var dataAttributeAllowList = []string{
+		"data:image/avif",
+		"data:image/apng",
+		"data:image/png",
+		"data:image/svg",
+		"data:image/svg+xml",
+		"data:image/jpg",
+		"data:image/jpeg",
+		"data:image/gif",
+		"data:image/webp",
+	}
+
+	for _, prefix := range dataAttributeAllowList {
+		if strings.HasPrefix(value, prefix) {
+			return true
+		}
+	}
+	return false
 }

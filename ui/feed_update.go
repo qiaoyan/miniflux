@@ -7,25 +7,27 @@ package ui // import "miniflux.app/ui"
 import (
 	"net/http"
 
-	"miniflux.app/http/client"
+	"miniflux.app/config"
 	"miniflux.app/http/request"
 	"miniflux.app/http/response/html"
 	"miniflux.app/http/route"
 	"miniflux.app/logger"
+	"miniflux.app/model"
 	"miniflux.app/ui/form"
 	"miniflux.app/ui/session"
 	"miniflux.app/ui/view"
+	"miniflux.app/validator"
 )
 
 func (h *handler) updateFeed(w http.ResponseWriter, r *http.Request) {
-	user, err := h.store.UserByID(request.UserID(r))
+	loggedUser, err := h.store.UserByID(request.UserID(r))
 	if err != nil {
 		html.ServerError(w, r, err)
 		return
 	}
 
 	feedID := request.RouteInt64Param(r, "feedID")
-	feed, err := h.store.FeedByID(user.ID, feedID)
+	feed, err := h.store.FeedByID(loggedUser.ID, feedID)
 	if err != nil {
 		html.ServerError(w, r, err)
 		return
@@ -36,7 +38,7 @@ func (h *handler) updateFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	categories, err := h.store.Categories(user.ID)
+	categories, err := h.store.Categories(loggedUser.ID)
 	if err != nil {
 		html.ServerError(w, r, err)
 		return
@@ -50,13 +52,22 @@ func (h *handler) updateFeed(w http.ResponseWriter, r *http.Request) {
 	view.Set("categories", categories)
 	view.Set("feed", feed)
 	view.Set("menu", "feeds")
-	view.Set("user", user)
-	view.Set("countUnread", h.store.CountUnreadEntries(user.ID))
-	view.Set("countErrorFeeds", h.store.CountUserFeedsWithErrors(user.ID))
-	view.Set("defaultUserAgent", client.DefaultUserAgent)
+	view.Set("user", loggedUser)
+	view.Set("countUnread", h.store.CountUnreadEntries(loggedUser.ID))
+	view.Set("countErrorFeeds", h.store.CountUserFeedsWithErrors(loggedUser.ID))
+	view.Set("defaultUserAgent", config.Opts.HTTPClientUserAgent())
 
-	if err := feedForm.ValidateModification(); err != nil {
-		view.Set("errorMessage", err.Error())
+	feedModificationRequest := &model.FeedModificationRequest{
+		FeedURL:        model.OptionalString(feedForm.FeedURL),
+		SiteURL:        model.OptionalString(feedForm.SiteURL),
+		Title:          model.OptionalString(feedForm.Title),
+		CategoryID:     model.OptionalInt64(feedForm.CategoryID),
+		BlocklistRules: model.OptionalString(feedForm.BlocklistRules),
+		KeeplistRules:  model.OptionalString(feedForm.KeeplistRules),
+	}
+
+	if validationErr := validator.ValidateFeedModification(h.store, loggedUser.ID, feedModificationRequest); validationErr != nil {
+		view.Set("errorMessage", validationErr.TranslationKey)
 		html.OK(w, r, view.Render("edit_feed"))
 		return
 	}

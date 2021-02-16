@@ -7,26 +7,30 @@ package ui // import "miniflux.app/ui"
 import (
 	"net/http"
 
-	"miniflux.app/reader/feed"
+	"miniflux.app/config"
 	"miniflux.app/storage"
 	"miniflux.app/template"
 	"miniflux.app/worker"
 
 	"github.com/gorilla/mux"
+	servertiming "github.com/mitchellh/go-server-timing"
 )
 
 // Serve declares all routes for the user interface.
-func Serve(router *mux.Router, store *storage.Storage, pool *worker.Pool, feedHandler *feed.Handler) {
+func Serve(router *mux.Router, store *storage.Storage, pool *worker.Pool) {
 	middleware := newMiddleware(router, store)
-	handler := &handler{router, store, template.NewEngine(router), pool, feedHandler}
+	handler := &handler{router, store, template.NewEngine(router), pool}
 
 	uiRouter := router.NewRoute().Subrouter()
 	uiRouter.Use(middleware.handleUserSession)
 	uiRouter.Use(middleware.handleAppSession)
+	uiRouter.Use(func(h http.Handler) http.Handler {
+		return servertiming.Middleware(h, &servertiming.MiddlewareOpts{DisableHeaders: !config.Opts.HasServerTimingHeader()})
+	})
 	uiRouter.StrictSlash(true)
 
 	// Static assets.
-	uiRouter.HandleFunc("/.well-known/apple-app-site-association", handler.showAppleAppSiteAssociation).Name("appleAppSiteAssociation").Methods("GET")
+	uiRouter.HandleFunc("/.well-known/apple-app-site-association", handler.showAppleAppSiteAssociation).Name("appleAppSiteAssociation").Methods(http.MethodGet)
 	uiRouter.HandleFunc("/stylesheets/{name}.css", handler.showStylesheet).Name("stylesheet").Methods(http.MethodGet)
 	uiRouter.HandleFunc("/{name}.js", handler.showJavascript).Name("javascript").Methods(http.MethodGet)
 	uiRouter.HandleFunc("/favicon.ico", handler.showFavicon).Name("favicon").Methods(http.MethodGet)
