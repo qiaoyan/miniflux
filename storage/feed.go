@@ -8,8 +8,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"runtime"
 
 	"miniflux.app/config"
+	"miniflux.app/logger"
 	"miniflux.app/model"
 )
 
@@ -201,10 +203,11 @@ func (s *Storage) CreateFeed(feed *model.Feed) error {
 			blocklist_rules,
 			keeplist_rules,
 			ignore_http_cache,
+			allow_self_signed_certificates,
 			fetch_via_proxy
 		)
 		VALUES
-			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 		RETURNING
 			id
 	`
@@ -227,6 +230,7 @@ func (s *Storage) CreateFeed(feed *model.Feed) error {
 		feed.BlocklistRules,
 		feed.KeeplistRules,
 		feed.IgnoreHTTPCache,
+		feed.AllowSelfSignedCertificates,
 		feed.FetchViaProxy,
 	).Scan(&feed.ID)
 	if err != nil {
@@ -283,9 +287,10 @@ func (s *Storage) UpdateFeed(feed *model.Feed) (err error) {
 			disabled=$18,
 			next_check_at=$19,
 			ignore_http_cache=$20,
-			fetch_via_proxy=$21
+			allow_self_signed_certificates=$21,
+			fetch_via_proxy=$22
 		WHERE
-			id=$22 AND user_id=$23
+			id=$23 AND user_id=$24
 	`
 	_, err = s.db.Exec(query,
 		feed.FeedURL,
@@ -308,6 +313,7 @@ func (s *Storage) UpdateFeed(feed *model.Feed) (err error) {
 		feed.Disabled,
 		feed.NextCheckAt,
 		feed.IgnoreHTTPCache,
+		feed.AllowSelfSignedCertificates,
 		feed.FetchViaProxy,
 		feed.ID,
 		feed.UserID,
@@ -349,21 +355,30 @@ func (s *Storage) UpdateFeedError(feed *model.Feed) (err error) {
 	return nil
 }
 
-// RemoveFeed removes a feed.
+// RemoveFeed removes a feed and all entries.
+// This operation can takes time if the feed has lot of entries.
 func (s *Storage) RemoveFeed(userID, feedID int64) error {
-	query := `DELETE FROM feeds WHERE id = $1 AND user_id = $2`
-	result, err := s.db.Exec(query, feedID, userID)
+	rows, err := s.db.Query(`SELECT id FROM entries WHERE user_id=$1 AND feed_id=$2`, userID, feedID)
 	if err != nil {
-		return fmt.Errorf(`store: unable to remove feed #%d: %v`, feedID, err)
+		return fmt.Errorf(`store: unable to get user feed entries: %v`, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var entryID int64
+		if err := rows.Scan(&entryID); err != nil {
+			return fmt.Errorf(`store: unable to read user feed entry ID: %v`, err)
+		}
+
+		logger.Debug(`[FEED DELETION] Deleting entry #%d of feed #%d for user #%d (%d GoRoutines)`, entryID, feedID, userID, runtime.NumGoroutine())
+
+		if _, err := s.db.Exec(`DELETE FROM entries WHERE id=$1 AND user_id=$2`, entryID, userID); err != nil {
+			return fmt.Errorf(`store: unable to delete user feed entries #%d: %v`, entryID, err)
+		}
 	}
 
-	count, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf(`store: unable to remove feed #%d: %v`, feedID, err)
-	}
-
-	if count == 0 {
-		return errors.New(`store: no feed has been removed`)
+	if _, err := s.db.Exec(`DELETE FROM feeds WHERE id=$1`, feedID); err != nil {
+		return fmt.Errorf(`store: unable to delete feed #%d: %v`, feedID, err)
 	}
 
 	return nil

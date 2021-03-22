@@ -6,11 +6,11 @@ package client // import "miniflux.app/http/client"
 
 import (
 	"bytes"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -51,9 +51,10 @@ type Client struct {
 	useProxy             bool
 	doNotFollowRedirects bool
 
-	ClientTimeout     int
-	ClientMaxBodySize int64
-	ClientProxyURL    string
+	ClientTimeout               int
+	ClientMaxBodySize           int64
+	ClientProxyURL              string
+	AllowSelfSignedCertificates bool
 }
 
 // New initializes a new HTTP client.
@@ -88,13 +89,14 @@ func (c *Client) String() string {
 	}
 
 	return fmt.Sprintf(
-		`InputURL=%q RequestURL=%q ETag=%s LastModified=%s Auth=%v UserAgent=%q`,
+		`InputURL=%q RequestURL=%q ETag=%s LastMod=%s Auth=%v UserAgent=%q Verify=%v`,
 		c.inputURL,
 		c.requestURL,
 		etagHeader,
 		lastModifiedHeader,
 		c.requestAuthorizationHeader != "" || (c.requestUsername != "" && c.requestPassword != ""),
 		c.requestUserAgent,
+		!c.AllowSelfSignedCertificates,
 	)
 }
 
@@ -219,7 +221,7 @@ func (c *Client) executeRequest(request *http.Request) (*Response, error) {
 		return nil, fmt.Errorf("client: response too large (%d bytes)", resp.ContentLength)
 	}
 
-	buf, err := ioutil.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("client: error while reading body %v", err)
 	}
@@ -287,6 +289,10 @@ func (c *Client) buildClient() http.Client {
 
 		// Default is 90s.
 		IdleConnTimeout: 10 * time.Second,
+	}
+
+	if c.AllowSelfSignedCertificates {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
 	if c.doNotFollowRedirects {

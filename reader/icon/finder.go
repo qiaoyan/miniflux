@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"miniflux.app/config"
@@ -22,12 +21,14 @@ import (
 )
 
 // FindIcon try to find the website's icon.
-func FindIcon(websiteURL string, fetchViaProxy bool) (*model.Icon, error) {
+func FindIcon(websiteURL string, fetchViaProxy, allowSelfSignedCertificates bool) (*model.Icon, error) {
 	rootURL := url.RootURL(websiteURL)
 	clt := client.NewClientWithConfig(rootURL, config.Opts)
+	clt.AllowSelfSignedCertificates = allowSelfSignedCertificates
 	if fetchViaProxy {
 		clt.WithProxy()
 	}
+
 	response, err := clt.Get()
 	if err != nil {
 		return nil, fmt.Errorf("unable to download website index page: %v", err)
@@ -47,7 +48,7 @@ func FindIcon(websiteURL string, fetchViaProxy bool) (*model.Icon, error) {
 	}
 
 	logger.Debug("[FindIcon] Fetching icon => %s", iconURL)
-	icon, err := downloadIcon(iconURL, fetchViaProxy)
+	icon, err := downloadIcon(iconURL, fetchViaProxy, allowSelfSignedCertificates)
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +91,9 @@ func parseDocument(websiteURL string, data io.Reader) (string, error) {
 	return iconURL, nil
 }
 
-func downloadIcon(iconURL string, fetchViaProxy bool) (*model.Icon, error) {
+func downloadIcon(iconURL string, fetchViaProxy, allowSelfSignedCertificates bool) (*model.Icon, error) {
 	clt := client.NewClientWithConfig(iconURL, config.Opts)
+	clt.AllowSelfSignedCertificates = allowSelfSignedCertificates
 	if fetchViaProxy {
 		clt.WithProxy()
 	}
@@ -104,7 +106,7 @@ func downloadIcon(iconURL string, fetchViaProxy bool) (*model.Icon, error) {
 		return nil, fmt.Errorf("unable to download icon: status=%d", response.StatusCode)
 	}
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read downloaded icon: %v", err)
 	}

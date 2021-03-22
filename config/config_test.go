@@ -5,7 +5,6 @@
 package config // import "miniflux.app/config"
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -1309,7 +1308,7 @@ DEBUG = yes
 Invalid text
 `)
 
-	tmpfile, err := ioutil.TempFile(".", "miniflux.*.unit_test.conf")
+	tmpfile, err := os.CreateTemp(".", "miniflux.*.unit_test.conf")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1412,5 +1411,23 @@ func TestAuthProxyUserCreationAdmin(t *testing.T) {
 
 	if result != expected {
 		t.Fatalf(`Unexpected AUTH_PROXY_USER_CREATION value, got %v instead of %v`, result, expected)
+	}
+}
+
+func TestFetchYouTubeWatchTime(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("FETCH_YOUTUBE_WATCH_TIME", "1")
+
+	parser := NewParser()
+	opts, err := parser.ParseEnvironmentVariables()
+	if err != nil {
+		t.Fatalf(`Parsing failure: %v`, err)
+	}
+
+	expected := true
+	result := opts.FetchYouTubeWatchTime()
+
+	if result != expected {
+		t.Fatalf(`Unexpected FETCH_YOUTUBE_WATCH_TIME value, got %v instead of %v`, result, expected)
 	}
 }

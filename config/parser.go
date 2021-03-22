@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	url_parser "net/url"
 	"os"
 	"strconv"
@@ -188,6 +187,8 @@ func (p *Parser) parseLines(lines []string) (err error) {
 			p.opts.metricsRefreshInterval = parseInt(value, defaultMetricsRefreshInterval)
 		case "METRICS_ALLOWED_NETWORKS":
 			p.opts.metricsAllowedNetworks = parseStringList(value, []string{defaultMetricsAllowedNetworks})
+		case "FETCH_YOUTUBE_WATCH_TIME":
+			p.opts.fetchYouTubeWatchTime = parseBool(value, defaultFetchYouTubeWatchTime)
 		}
 	}
 
@@ -269,7 +270,7 @@ func parseStringList(value string, fallback []string) []string {
 }
 
 func readSecretFile(filename, fallback string) string {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return fallback
 	}

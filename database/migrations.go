@@ -10,6 +10,7 @@ import (
 
 var schemaVersion = len(migrations)
 
+// Order is important. Add new migrations at the end of the list.
 var migrations = []func(tx *sql.Tx) error{
 	func(tx *sql.Tx) (err error) {
 		sql := `
@@ -512,6 +513,20 @@ var migrations = []func(tx *sql.Tx) error{
 				updated_at timestamptz not null
 			);
 		`)
+		return err
+	},
+	func(tx *sql.Tx) (err error) {
+		_, err = tx.Exec(`
+			ALTER TABLE feeds ADD COLUMN allow_self_signed_certificates boolean not null default false
+		`)
+		return err
+	},
+	func(tx *sql.Tx) (err error) {
+		sql := `
+			CREATE TYPE webapp_display_mode AS enum('fullscreen', 'standalone', 'minimal-ui', 'browser');
+			ALTER TABLE users ADD COLUMN display_mode webapp_display_mode default 'standalone';
+		`
+		_, err = tx.Exec(sql)
 		return err
 	},
 }

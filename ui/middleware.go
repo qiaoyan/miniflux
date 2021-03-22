@@ -143,7 +143,8 @@ func (m *middleware) isPublicRoute(r *http.Request) bool {
 		"appleAppSiteAssociation",
 		"robots",
 		"sharedEntry",
-		"healthcheck":
+		"healthcheck",
+		"offline":
 		return true
 	default:
 		return false
