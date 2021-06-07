@@ -9,11 +9,30 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"sort"
 
 	"miniflux.app/config"
 	"miniflux.app/logger"
 	"miniflux.app/model"
 )
+
+type byStateAndName struct{ f model.Feeds }
+
+func (l byStateAndName) Len() int      { return len(l.f) }
+func (l byStateAndName) Swap(i, j int) { l.f[i], l.f[j] = l.f[j], l.f[i] }
+func (l byStateAndName) Less(i, j int) bool {
+	if l.f[i].ParsingErrorCount > 0 && l.f[j].ParsingErrorCount == 0 {
+		return true
+	} else if l.f[i].ParsingErrorCount == 0 && l.f[j].ParsingErrorCount > 0 {
+		return false
+	} else if l.f[i].UnreadCount > 0 && l.f[j].UnreadCount == 0 {
+		return true
+	} else if l.f[i].UnreadCount == 0 && l.f[j].UnreadCount > 0 {
+		return false
+	} else {
+		return l.f[i].Title < l.f[j].Title
+	}
+}
 
 // FeedExists checks if the given feed exists.
 func (s *Storage) FeedExists(userID, feedID int64) bool {
@@ -121,13 +140,22 @@ func (s *Storage) Feeds(userID int64) (model.Feeds, error) {
 	return builder.GetFeeds()
 }
 
+func getFeedsSorted(builder *FeedQueryBuilder) (model.Feeds, error) {
+	result, err := builder.GetFeeds()
+	if err == nil {
+		sort.Sort(byStateAndName{result})
+		return result, nil
+	}
+	return result, err
+}
+
 // FeedsWithCounters returns all feeds of the given user with counters of read and unread entries.
 func (s *Storage) FeedsWithCounters(userID int64) (model.Feeds, error) {
 	builder := NewFeedQueryBuilder(s, userID)
 	builder.WithCounters()
 	builder.WithOrder(model.DefaultFeedSorting)
 	builder.WithDirection(model.DefaultFeedSortingDirection)
-	return builder.GetFeeds()
+	return getFeedsSorted(builder)
 }
 
 // FeedsByCategoryWithCounters returns all feeds of the given user/category with counters of read and unread entries.
@@ -137,7 +165,7 @@ func (s *Storage) FeedsByCategoryWithCounters(userID, categoryID int64) (model.F
 	builder.WithCounters()
 	builder.WithOrder(model.DefaultFeedSorting)
 	builder.WithDirection(model.DefaultFeedSortingDirection)
-	return builder.GetFeeds()
+	return getFeedsSorted(builder)
 }
 
 // WeeklyFeedEntryCount returns the weekly entry count for a feed.
@@ -195,6 +223,7 @@ func (s *Storage) CreateFeed(feed *model.Feed) error {
 			last_modified_header,
 			crawler,
 			user_agent,
+			cookie,
 			username,
 			password,
 			disabled,
@@ -207,7 +236,7 @@ func (s *Storage) CreateFeed(feed *model.Feed) error {
 			fetch_via_proxy
 		)
 		VALUES
-			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 		RETURNING
 			id
 	`
@@ -222,6 +251,7 @@ func (s *Storage) CreateFeed(feed *model.Feed) error {
 		feed.LastModifiedHeader,
 		feed.Crawler,
 		feed.UserAgent,
+		feed.Cookie,
 		feed.Username,
 		feed.Password,
 		feed.Disabled,
@@ -282,15 +312,16 @@ func (s *Storage) UpdateFeed(feed *model.Feed) (err error) {
 			keeplist_rules=$13,
 			crawler=$14,
 			user_agent=$15,
-			username=$16,
-			password=$17,
-			disabled=$18,
-			next_check_at=$19,
-			ignore_http_cache=$20,
-			allow_self_signed_certificates=$21,
-			fetch_via_proxy=$22
+			cookie=$16,
+			username=$17,
+			password=$18,
+			disabled=$19,
+			next_check_at=$20,
+			ignore_http_cache=$21,
+			allow_self_signed_certificates=$22,
+			fetch_via_proxy=$23
 		WHERE
-			id=$23 AND user_id=$24
+			id=$24 AND user_id=$25
 	`
 	_, err = s.db.Exec(query,
 		feed.FeedURL,
@@ -308,6 +339,7 @@ func (s *Storage) UpdateFeed(feed *model.Feed) (err error) {
 		feed.KeeplistRules,
 		feed.Crawler,
 		feed.UserAgent,
+		feed.Cookie,
 		feed.Username,
 		feed.Password,
 		feed.Disabled,
@@ -377,7 +409,7 @@ func (s *Storage) RemoveFeed(userID, feedID int64) error {
 		}
 	}
 
-	if _, err := s.db.Exec(`DELETE FROM feeds WHERE id=$1`, feedID); err != nil {
+	if _, err := s.db.Exec(`DELETE FROM feeds WHERE id=$1 AND user_id=$2`, feedID, userID); err != nil {
 		return fmt.Errorf(`store: unable to delete feed #%d: %v`, feedID, err)
 	}
 

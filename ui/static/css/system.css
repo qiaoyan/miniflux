@@ -7,6 +7,7 @@
     --link-color: #3366CC;
     --link-focus-color: red;
     --link-hover-color: #333;
+    --link-visited-color: purple;
 
     --header-list-border-color: #ddd;
     --header-link-color: #444;
@@ -99,6 +100,12 @@
 
     --parsing-error-color: #333;
     --feed-parsing-error-background-color: #fcf8e3;
+    --feed-parsing-error-border-style: solid;
+    --feed-parsing-error-border-color: #f9e883;
+
+    --feed-has-unread-background-color: #dfd;
+    --feed-has-unread-border-style: solid;
+    --feed-has-unread-border-color: #bee6bc;
 
     --keyboard-shortcuts-li-color: #333;
 
@@ -114,6 +121,7 @@
         --link-color: #aaa;
         --link-focus-color: #ddd;
         --link-hover-color: #ddd;
+        --link-visited-color: #f083e4;
 
         --header-list-border-color: #333;
         --header-link-color: #ddd;
@@ -205,7 +213,13 @@
         --entry-enclosure-border-color: #333;
 
         --parsing-error-color: #eee;
-        --feed-parsing-error-background-color: #343434;
+        --feed-parsing-error-background-color: #3a1515;
+        --feed-parsing-error-border-style: solid;
+        --feed-parsing-error-border-color: #562222;
+
+        --feed-has-unread-background-color: #1b1a1a;
+        --feed-has-unread-border-style: solid;
+        --feed-has-unread-border-color: rgb(33 57 76);
 
         --keyboard-shortcuts-li-color: #9b9b9b;
 

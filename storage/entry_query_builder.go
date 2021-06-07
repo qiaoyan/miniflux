@@ -233,6 +233,7 @@ func (e *EntryQueryBuilder) GetEntries() (model.Entries, error) {
 			e.starred,
 			e.reading_time,
 			e.created_at,
+			e.changed_at,
 			f.title as feed_title,
 			f.feed_url,
 			f.site_url,
@@ -242,6 +243,7 @@ func (e *EntryQueryBuilder) GetEntries() (model.Entries, error) {
 			f.rewrite_rules,
 			f.crawler,
 			f.user_agent,
+			f.cookie,
 			fi.icon_id,
 			u.timezone
 		FROM
@@ -293,6 +295,7 @@ func (e *EntryQueryBuilder) GetEntries() (model.Entries, error) {
 			&entry.Starred,
 			&entry.ReadingTime,
 			&entry.CreatedAt,
+			&entry.ChangedAt,
 			&entry.Feed.Title,
 			&entry.Feed.FeedURL,
 			&entry.Feed.SiteURL,
@@ -303,6 +306,7 @@ func (e *EntryQueryBuilder) GetEntries() (model.Entries, error) {
 			&entry.Feed.RewriteRules,
 			&entry.Feed.Crawler,
 			&entry.Feed.UserAgent,
+			&entry.Feed.Cookie,
 			&iconID,
 			&tz,
 		)
@@ -320,6 +324,7 @@ func (e *EntryQueryBuilder) GetEntries() (model.Entries, error) {
 		// Make sure that timestamp fields contains timezone information (API)
 		entry.Date = timezone.Convert(tz, entry.Date)
 		entry.CreatedAt = timezone.Convert(tz, entry.CreatedAt)
+		entry.ChangedAt = timezone.Convert(tz, entry.ChangedAt)
 		entry.Feed.CheckedAt = timezone.Convert(tz, entry.Feed.CheckedAt)
 
 		entry.Feed.ID = entry.FeedID
@@ -372,7 +377,7 @@ func (e *EntryQueryBuilder) buildSorting() string {
 	}
 
 	if e.direction != "" {
-		parts = append(parts, fmt.Sprintf(`%s`, e.direction))
+		parts = append(parts, e.direction)
 	}
 
 	if e.limit > 0 {
