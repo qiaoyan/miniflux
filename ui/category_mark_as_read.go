@@ -6,21 +6,18 @@ package ui // import "miniflux.app/ui"
 
 import (
 	"net/http"
+	"time"
 
 	"miniflux.app/http/request"
 	"miniflux.app/http/response/html"
 	"miniflux.app/http/route"
 )
 
-func (h *handler) removeCategory(w http.ResponseWriter, r *http.Request) {
-	user, err := h.store.UserByID(request.UserID(r))
-	if err != nil {
-		html.ServerError(w, r, err)
-		return
-	}
-
+func (h *handler) markCategoryAsRead(w http.ResponseWriter, r *http.Request) {
+	userID := request.UserID(r)
 	categoryID := request.RouteInt64Param(r, "categoryID")
-	category, err := h.store.Category(request.UserID(r), categoryID)
+
+	category, err := h.store.Category(userID, categoryID)
 	if err != nil {
 		html.ServerError(w, r, err)
 		return
@@ -31,7 +28,7 @@ func (h *handler) removeCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.store.RemoveCategory(user.ID, category.ID); err != nil {
+	if err = h.store.MarkCategoryAsRead(userID, categoryID, time.Now()); err != nil {
 		html.ServerError(w, r, err)
 		return
 	}

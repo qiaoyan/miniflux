@@ -16,7 +16,7 @@ import (
 
 func (h *handler) showLoginPage(w http.ResponseWriter, r *http.Request) {
 	if request.IsAuthenticated(r) {
-		html.Redirect(w, r, route.Path(h.router, "feeds"))
+		html.Redirect(w, r, route.Path(h.router, "unread"))
 		return
 	}
 
