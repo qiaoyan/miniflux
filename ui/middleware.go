@@ -140,6 +140,7 @@ func (m *middleware) isPublicRoute(r *http.Request) bool {
 		"appIcon",
 		"favicon",
 		"webManifest",
+		"appleAppSiteAssociation",
 		"robots",
 		"sharedEntry",
 		"healthcheck",
@@ -222,6 +223,6 @@ func (m *middleware) handleAuthProxy(next http.Handler) http.Handler {
 			config.Opts.BasePath(),
 		))
 
-		html.Redirect(w, r, route.Path(m.router, "unread"))
+		html.Redirect(w, r, route.Path(m.router, "feeds"))
 	})
 }
