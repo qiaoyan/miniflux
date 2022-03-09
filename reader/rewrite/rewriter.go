@@ -74,6 +74,8 @@ func applyRule(entryURL, entryContent string, rule rule) string {
 		entryContent = addInvidiousVideo(entryURL, entryContent)
 	case "add_youtube_video_using_invidious_player":
 		entryContent = addYoutubeVideoUsingInvidiousPlayer(entryURL, entryContent)
+	case "add_youtube_video_from_id":
+		entryContent = addYoutubeVideoFromId(entryContent)
 	case "add_pdf_download_link":
 		entryContent = addPDFLink(entryURL, entryContent)
 	case "nl2br":
@@ -98,6 +100,8 @@ func applyRule(entryURL, entryContent string, rule rule) string {
 		} else {
 			logger.Debug("[Rewrite] Cannot find selector for remove rule %s", rule)
 		}
+	case "add_castopod_episode":
+		entryContent = addCastopodEpisode(entryURL, entryContent)
 	}
 
 	return entryContent
