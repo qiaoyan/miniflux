@@ -1,5 +1,5 @@
 .\" Manpage for miniflux.
-.TH "MINIFLUX" "1" "January 5, 2022" "\ \&" "\ \&"
+.TH "MINIFLUX" "1" "August 29, 2022" "\ \&" "\ \&"
 
 .SH NAME
 miniflux \- Minimalist and opinionated feed reader
@@ -369,6 +369,11 @@ Default is empty\&.
 Avoids mixed content warnings for external images: http-only, all, or none\&.
 .br
 Default is http-only\&.
+.TP
+.B PROXY_IMAGE_URL
+Sets a server to proxy images through\&.
+.br
+Default is empty, miniflux does the proxying\&.
 .TP
 .B HTTP_CLIENT_TIMEOUT
 Time limit in seconds before the HTTP client cancel the request\&.
