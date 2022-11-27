@@ -14,13 +14,14 @@ import (
 )
 
 type handler struct {
-	store *storage.Storage
-	pool  *worker.Pool
+	store  *storage.Storage
+	pool   *worker.Pool
+	router *mux.Router
 }
 
 // Serve declares API routes for the application.
 func Serve(router *mux.Router, store *storage.Storage, pool *worker.Pool) {
-	handler := &handler{store, pool}
+	handler := &handler{store, pool, router}
 
 	sr := router.PathPrefix("/v1").Subrouter()
 	middleware := newMiddleware(store)
@@ -64,5 +65,4 @@ func Serve(router *mux.Router, store *storage.Storage, pool *worker.Pool) {
 	sr.HandleFunc("/entries/{entryID}", handler.getEntry).Methods(http.MethodGet)
 	sr.HandleFunc("/entries/{entryID}/bookmark", handler.toggleBookmark).Methods(http.MethodPut)
 	sr.HandleFunc("/entries/{entryID}/fetch-content", handler.fetchContent).Methods(http.MethodGet)
-	sr.HandleFunc("/proxy/{encodedURL}", handler.imageProxy).Methods(http.MethodGet)
 }
