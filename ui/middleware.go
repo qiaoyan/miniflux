@@ -144,7 +144,8 @@ func (m *middleware) isPublicRoute(r *http.Request) bool {
 		"robots",
 		"sharedEntry",
 		"healthcheck",
-		"offline":
+		"offline",
+		"proxy":
 		return true
 	default:
 		return false
