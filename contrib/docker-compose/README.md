@@ -8,5 +8,6 @@ Here are few Docker Compose examples:
 - `traefik.yml`: Use Traefik as reverse-proxy with automatic HTTPS
 
 ```bash
-docker compose -f basic.yml up -d
+docker-compose -f basic.yml up -d db
+docker-compose -f basic.yml up
 ```

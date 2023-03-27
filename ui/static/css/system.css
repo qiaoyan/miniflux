@@ -116,10 +116,6 @@
     --counter-color: #666;
 }
 
-html {
-    color-scheme: light;
-}
-
 @media (prefers-color-scheme: dark) {
     :root {
         --body-color: #efefef;
@@ -236,9 +232,5 @@ html {
         --keyboard-shortcuts-li-color: #9b9b9b;
 
         --counter-color: #bbb;
-    }
-
-    html {
-        color-scheme: dark;
     }
 }

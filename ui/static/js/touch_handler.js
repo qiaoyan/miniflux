@@ -26,11 +26,11 @@ class TouchHandler {
     }
 
     findElement(element) {
-        if (element.classList.contains("entry-swipe")) {
+        if (element.classList.contains("touch-item")) {
             return element;
         }
 
-        return DomHelper.findParent(element, "entry-swipe");
+        return DomHelper.findParent(element, "touch-item");
     }
 
     onTouchStart(event) {
@@ -93,7 +93,7 @@ class TouchHandler {
     }
 
     listen() {
-        let elements = document.querySelectorAll(".entry-swipe");
+        let elements = document.querySelectorAll(".touch-item");
         let hasPassiveOption = DomHelper.hasPassiveEventListenerOption();
 
         elements.forEach((element) => {
@@ -104,7 +104,7 @@ class TouchHandler {
         });
 
         let entryContentElement = document.querySelector(".entry-content");
-        if (entryContentElement && entryContentElement.classList.contains('double-tap')) {
+        if (entryContentElement) {
             let doubleTapTimers = {
                 previous: null,
                 next: null

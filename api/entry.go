@@ -9,21 +9,17 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
-	"miniflux.app/config"
 	"miniflux.app/http/request"
 	"miniflux.app/http/response/json"
 	"miniflux.app/model"
-	"miniflux.app/proxy"
 	"miniflux.app/reader/processor"
 	"miniflux.app/storage"
-	"miniflux.app/url"
 	"miniflux.app/validator"
 )
 
-func (h *handler) getEntryFromBuilder(w http.ResponseWriter, r *http.Request, b *storage.EntryQueryBuilder) {
+func getEntryFromBuilder(w http.ResponseWriter, r *http.Request, b *storage.EntryQueryBuilder) {
 	entry, err := b.GetEntry()
 	if err != nil {
 		json.ServerError(w, r, err)
@@ -33,20 +29,6 @@ func (h *handler) getEntryFromBuilder(w http.ResponseWriter, r *http.Request, b 
 	if entry == nil {
 		json.NotFound(w, r)
 		return
-	}
-
-	entry.Content = proxy.AbsoluteProxyRewriter(h.router, r.Host, entry.Content)
-	proxyOption := config.Opts.ProxyOption()
-
-	for i := range entry.Enclosures {
-		if proxyOption == "all" || proxyOption != "none" && !url.IsHTTPS(entry.Enclosures[i].URL) {
-			for _, mediaType := range config.Opts.ProxyMediaTypes() {
-				if strings.HasPrefix(entry.Enclosures[i].MimeType, mediaType+"/") {
-					entry.Enclosures[i].URL = proxy.AbsoluteProxifyURL(h.router, r.Host, entry.Enclosures[i].URL)
-					break
-				}
-			}
-		}
 	}
 
 	json.OK(w, r, entry)
@@ -60,7 +42,7 @@ func (h *handler) getFeedEntry(w http.ResponseWriter, r *http.Request) {
 	builder.WithFeedID(feedID)
 	builder.WithEntryID(entryID)
 
-	h.getEntryFromBuilder(w, r, builder)
+	getEntryFromBuilder(w, r, builder)
 }
 
 func (h *handler) getCategoryEntry(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +53,7 @@ func (h *handler) getCategoryEntry(w http.ResponseWriter, r *http.Request) {
 	builder.WithCategoryID(categoryID)
 	builder.WithEntryID(entryID)
 
-	h.getEntryFromBuilder(w, r, builder)
+	getEntryFromBuilder(w, r, builder)
 }
 
 func (h *handler) getEntry(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +61,7 @@ func (h *handler) getEntry(w http.ResponseWriter, r *http.Request) {
 	builder := h.store.NewEntryQueryBuilder(request.UserID(r))
 	builder.WithEntryID(entryID)
 
-	h.getEntryFromBuilder(w, r, builder)
+	getEntryFromBuilder(w, r, builder)
 }
 
 func (h *handler) getFeedEntries(w http.ResponseWriter, r *http.Request) {
@@ -137,8 +119,6 @@ func (h *handler) findEntries(w http.ResponseWriter, r *http.Request, feedID int
 		return
 	}
 
-	tags := request.QueryStringParamList(r, "tags")
-
 	builder := h.store.NewEntryQueryBuilder(userID)
 	builder.WithFeedID(feedID)
 	builder.WithCategoryID(categoryID)
@@ -147,7 +127,6 @@ func (h *handler) findEntries(w http.ResponseWriter, r *http.Request, feedID int
 	builder.WithDirection(direction)
 	builder.WithOffset(offset)
 	builder.WithLimit(limit)
-	builder.WithTags(tags)
 	configureFilters(builder, r)
 
 	entries, err := builder.GetEntries()
@@ -160,10 +139,6 @@ func (h *handler) findEntries(w http.ResponseWriter, r *http.Request, feedID int
 	if err != nil {
 		json.ServerError(w, r, err)
 		return
-	}
-
-	for i := range entries {
-		entries[i].Content = proxy.AbsoluteProxyRewriter(h.router, r.Host, entries[i].Content)
 	}
 
 	json.OK(w, r, &entriesResponse{Total: count, Entries: entries})

@@ -130,7 +130,7 @@
             {{ end }}
             {{ if and .user.ShowReadingTime (gt .entry.ReadingTime 0) }}
             &centerdot;
-            <span class="entry-reading-time">
+            <span>
                 {{ plural "entry.estimated_reading_time" .entry.ReadingTime .entry.ReadingTime }}
             </span>
             {{ end }}
@@ -143,7 +143,7 @@
     </div>
     {{ end }}
     {{ end }}
-    <article role="article" class="entry-content {{ if $.user.DoubleTap }}double-tap{{ end }}" dir="auto">
+    <article role="article" class="entry-content" dir="auto">
         {{ if .user }}
             {{ noescape (proxyFilter .entry.Content) }}
         {{ else }}
@@ -159,26 +159,18 @@
                 {{ if hasPrefix .MimeType "audio/" }}
                     <div class="enclosure-audio">
                         <audio controls preload="metadata">
-				{{ if (and $.user (mustBeProxyfied "audio")) }}
-				    <source src="{{ proxyURL .URL }}" type="{{ .MimeType }}">
-				{{ else }}
-				    <source src="{{ .URL | safeURL }}" type="{{ .MimeType }}">
-				{{ end }}
+                            <source src="{{ .URL | safeURL }}" type="{{ .MimeType }}">
                         </audio>
                     </div>
                 {{ else if hasPrefix .MimeType "video/" }}
                     <div class="enclosure-video">
                         <video controls preload="metadata">
-				{{ if (and $.user (mustBeProxyfied "video")) }}
-				    <source src="{{ proxyURL .URL }}" type="{{ .MimeType }}">
-				{{ else }}
-				    <source src="{{ .URL | safeURL }}" type="{{ .MimeType }}">
-				{{ end }}
+                            <source src="{{ .URL | safeURL }}" type="{{ .MimeType }}">
                         </video>
                     </div>
                 {{ else if hasPrefix .MimeType "image/" }}
                     <div class="enclosure-image">
-                        {{ if (and $.user (mustBeProxyfied "image")) }}
+                        {{ if $.user }}
                             <img src="{{ proxyURL .URL }}" title="{{ .URL }} ({{ .MimeType }})" loading="lazy" alt="{{ .URL }} ({{ .MimeType }})">
                         {{ else }}
                             <img src="{{ .URL | safeURL }}" title="{{ .URL }} ({{ .MimeType }})" loading="lazy" alt="{{ .URL }} ({{ .MimeType }})">

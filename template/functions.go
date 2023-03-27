@@ -61,24 +61,16 @@ func (f *funcMap) Map() template.FuncMap {
 			return template.HTML(str)
 		},
 		"proxyFilter": func(data string) string {
-			return proxy.ProxyRewriter(f.router, data)
+			return proxy.ImageProxyRewriter(f.router, data)
 		},
 		"proxyURL": func(link string) string {
-			proxyOption := config.Opts.ProxyOption()
+			proxyImages := config.Opts.ProxyImages()
 
-			if proxyOption == "all" || (proxyOption != "none" && !url.IsHTTPS(link)) {
+			if proxyImages == "all" || (proxyImages != "none" && !url.IsHTTPS(link)) {
 				return proxy.ProxifyURL(f.router, link)
 			}
 
 			return link
-		},
-		"mustBeProxyfied": func(mediaType string) bool {
-			for _, t := range config.Opts.ProxyMediaTypes() {
-				if t == mediaType {
-					return true
-				}
-			}
-			return false
 		},
 		"domain": func(websiteURL string) string {
 			return url.Domain(websiteURL)

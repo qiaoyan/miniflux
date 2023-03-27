@@ -12,8 +12,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"miniflux.app/logger"
 )
 
 const compressionThreshold = 1024
@@ -90,10 +88,7 @@ func (b *Builder) Write() {
 	case io.Reader:
 		// Compression not implemented in this case
 		b.writeHeaders()
-		_, err := io.Copy(b.w, v)
-		if err != nil {
-			logger.Error("%v", err)
-		}
+		io.Copy(b.w, v)
 	}
 }
 

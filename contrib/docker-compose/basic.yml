@@ -1,3 +1,4 @@
+version: '3.4'
 services:
   miniflux:
     image: ${MINIFLUX_IMAGE:-miniflux/miniflux:latest}
@@ -6,8 +7,7 @@ services:
     ports:
       - "80:8080"
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     environment:
       - DATABASE_URL=postgres://miniflux:secret@db/miniflux?sslmode=disable
       - RUN_MIGRATIONS=1
@@ -19,7 +19,7 @@ services:
     # healthcheck:
     #  test: ["CMD", "/usr/bin/miniflux", "-healthcheck", "auto"]
   db:
-    image: postgres:15
+    image: postgres:latest
     container_name: postgres
     environment:
       - POSTGRES_USER=miniflux

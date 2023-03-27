@@ -248,12 +248,6 @@ func (c *Client) DeleteCategory(categoryID int64) error {
 	return c.request.Delete(fmt.Sprintf("/v1/categories/%d", categoryID))
 }
 
-// RefreshCategory refreshes a category.
-func (c *Client) RefreshCategory(categoryID int64) error {
-	_, err := c.request.Put(fmt.Sprintf("/v1/categories/%d/refresh", categoryID), nil)
-	return err
-}
-
 // Feeds gets all feeds.
 func (c *Client) Feeds() (Feeds, error) {
 	body, err := c.request.Get("/v1/feeds")

@@ -43,7 +43,6 @@ type jsonItem struct {
 	Authors       []jsonAuthor     `json:"authors"`
 	Author        jsonAuthor       `json:"author"`
 	Attachments   []jsonAttachment `json:"attachments"`
-	Tags          []string         `json:"tags"`
 }
 
 type jsonAttachment struct {
@@ -182,7 +181,6 @@ func (j *jsonItem) Transform() *model.Entry {
 	entry.Content = j.GetContent()
 	entry.Title = strings.TrimSpace(j.GetTitle())
 	entry.Enclosures = j.GetEnclosures()
-	entry.Tags = j.Tags
 	return entry
 }
 

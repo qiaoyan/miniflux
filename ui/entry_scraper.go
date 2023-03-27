@@ -9,7 +9,6 @@ import (
 
 	"miniflux.app/http/request"
 	"miniflux.app/http/response/json"
-	"miniflux.app/locale"
 	"miniflux.app/model"
 	"miniflux.app/proxy"
 	"miniflux.app/reader/processor"
@@ -65,7 +64,5 @@ func (h *handler) fetchContent(w http.ResponseWriter, r *http.Request) {
 		json.ServerError(w, r, err)
 	}
 
-	readingTime := locale.NewPrinter(user.Language).Plural("entry.estimated_reading_time", entry.ReadingTime, entry.ReadingTime)
-
-	json.OK(w, r, map[string]string{"content": proxy.ProxyRewriter(h.router, entry.Content), "reading_time": readingTime})
+	json.OK(w, r, map[string]string{"content": proxy.ImageProxyRewriter(h.router, entry.Content)})
 }

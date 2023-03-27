@@ -43,9 +43,4 @@ type Integration struct {
 	LinkdingEnabled      bool
 	LinkdingURL          string
 	LinkdingAPIKey       string
-	MatrixBotEnabled     bool
-	MatrixBotUser        string
-	MatrixBotPassword    string
-	MatrixBotURL         string
-	MatrixBotChatID      string
 }

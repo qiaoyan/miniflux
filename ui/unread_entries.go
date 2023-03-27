@@ -5,21 +5,21 @@
 package ui // import "miniflux.app/ui"
 
 import (
-	"fmt"
 	"net/http"
-	"time"
 
-	"miniflux.app/config"
 	"miniflux.app/http/request"
 	"miniflux.app/http/response/html"
 	"miniflux.app/http/route"
 	"miniflux.app/model"
 	"miniflux.app/ui/session"
 	"miniflux.app/ui/view"
+
+	servertiming "github.com/mitchellh/go-server-timing"
 )
 
 func (h *handler) showUnreadPage(w http.ResponseWriter, r *http.Request) {
-	beginPreProcessing := time.Now()
+	timing := servertiming.FromContext(r.Context())
+	prep := timing.NewMetric("pre_processing").Start()
 
 	sess := session.New(h.store, request.SessionID(r))
 	view := view.New(h.tpl, r, sess)
@@ -30,7 +30,7 @@ func (h *handler) showUnreadPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	beginSqlCountUnreadEntries := time.Now()
+	m := timing.NewMetric("sql_count_unread_entries").Start()
 	offset := request.QueryIntParam(r, "offset", 0)
 	builder := h.store.NewEntryQueryBuilder(user.ID)
 	builder.WithStatus(model.EntryStatusUnread)
@@ -40,13 +40,13 @@ func (h *handler) showUnreadPage(w http.ResponseWriter, r *http.Request) {
 		html.ServerError(w, r, err)
 		return
 	}
-	finishSqlCountUnreadEntries := time.Now()
+	m.Stop()
 
 	if offset >= countUnread {
 		offset = 0
 	}
 
-	beginSqlFetchUnreadEntries := time.Now()
+	m = timing.NewMetric("sql_fetch_unread_entries").Start()
 	builder = h.store.NewEntryQueryBuilder(user.ID)
 	builder.WithStatus(model.EntryStatusUnread)
 	builder.WithOrder(user.EntryOrder)
@@ -59,7 +59,7 @@ func (h *handler) showUnreadPage(w http.ResponseWriter, r *http.Request) {
 		html.ServerError(w, r, err)
 		return
 	}
-	finishSqlFetchUnreadEntries := time.Now()
+	m.Stop()
 
 	view.Set("entries", entries)
 	view.Set("pagination", getPagination(route.Path(h.router, "unread"), countUnread, offset, user.EntriesPerPage))
@@ -69,20 +69,11 @@ func (h *handler) showUnreadPage(w http.ResponseWriter, r *http.Request) {
 	view.Set("countErrorFeeds", h.store.CountUserFeedsWithErrors(user.ID))
 	view.Set("hasSaveEntry", h.store.HasSaveEntry(user.ID))
 
-	finishPreProcessing := time.Now()
+	prep.Stop()
 
-	beginTemplateRendering := time.Now()
+	m = timing.NewMetric("template_rendering").Start()
 	render := view.Render("unread_entries")
-	finishTemplateRendering := time.Now()
-
-	if config.Opts.HasServerTimingHeader() {
-		w.Header().Set("Server-Timing", fmt.Sprintf("pre_processing;dur=%d,sql_count_unread_entries;dur=%d,sql_fetch_unread_entries;dur=%d,template_rendering;dur=%d",
-			finishPreProcessing.Sub(beginPreProcessing).Milliseconds(),
-			finishSqlCountUnreadEntries.Sub(beginSqlCountUnreadEntries).Milliseconds(),
-			finishSqlFetchUnreadEntries.Sub(beginSqlFetchUnreadEntries).Milliseconds(),
-			finishTemplateRendering.Sub(beginTemplateRendering).Milliseconds(),
-		))
-	}
+	m.Stop()
 
 	html.OK(w, r, render)
 }
