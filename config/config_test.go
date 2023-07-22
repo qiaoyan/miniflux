@@ -1,6 +1,5 @@
-// Copyright 2019 Frédéric Guillot. All rights reserved.
-// Use of this source code is governed by the Apache 2.0
-// license that can be found in the LICENSE file.
+// SPDX-FileCopyrightText: Copyright The Miniflux Authors. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 package config // import "miniflux.app/config"
 
@@ -1226,6 +1225,66 @@ func TestProxyMediaTypes(t *testing.T) {
 	}
 }
 
+func TestProxyMediaTypesWithDuplicatedValues(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("PROXY_MEDIA_TYPES", "image,audio, image")
+
+	parser := NewParser()
+	opts, err := parser.ParseEnvironmentVariables()
+	if err != nil {
+		t.Fatalf(`Parsing failure: %v`, err)
+	}
+
+	expected := []string{"audio", "image"}
+	if len(expected) != len(opts.ProxyMediaTypes()) {
+		t.Fatalf(`Unexpected PROXY_MEDIA_TYPES value, got %v instead of %v`, opts.ProxyMediaTypes(), expected)
+	}
+
+	resultMap := make(map[string]bool)
+	for _, mediaType := range opts.ProxyMediaTypes() {
+		resultMap[mediaType] = true
+	}
+
+	for _, mediaType := range expected {
+		if !resultMap[mediaType] {
+			t.Fatalf(`Unexpected PROXY_MEDIA_TYPES value, got %v instead of %v`, opts.ProxyMediaTypes(), expected)
+		}
+	}
+}
+
+func TestProxyImagesOptionBackwardCompatibility(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("PROXY_IMAGES", "all")
+
+	parser := NewParser()
+	opts, err := parser.ParseEnvironmentVariables()
+	if err != nil {
+		t.Fatalf(`Parsing failure: %v`, err)
+	}
+
+	expected := []string{"image"}
+	if len(expected) != len(opts.ProxyMediaTypes()) {
+		t.Fatalf(`Unexpected PROXY_MEDIA_TYPES value, got %v instead of %v`, opts.ProxyMediaTypes(), expected)
+	}
+
+	resultMap := make(map[string]bool)
+	for _, mediaType := range opts.ProxyMediaTypes() {
+		resultMap[mediaType] = true
+	}
+
+	for _, mediaType := range expected {
+		if !resultMap[mediaType] {
+			t.Fatalf(`Unexpected PROXY_MEDIA_TYPES value, got %v instead of %v`, opts.ProxyMediaTypes(), expected)
+		}
+	}
+
+	expectedProxyOption := "all"
+	result := opts.ProxyOption()
+	if result != expectedProxyOption {
+		t.Fatalf(`Unexpected PROXY_OPTION value, got %q instead of %q`, result, expectedProxyOption)
+	}
+}
+
 func TestDefaultProxyMediaTypes(t *testing.T) {
 	os.Clearenv()
 
@@ -1554,6 +1613,24 @@ func TestFetchYouTubeWatchTime(t *testing.T) {
 
 	if result != expected {
 		t.Fatalf(`Unexpected FETCH_YOUTUBE_WATCH_TIME value, got %v instead of %v`, result, expected)
+	}
+}
+
+func TestYouTubeEmbedUrlOverride(t *testing.T) {
+	os.Clearenv()
+	os.Setenv("YOUTUBE_EMBED_URL_OVERRIDE", "https://invidious.custom/embed/")
+
+	parser := NewParser()
+	opts, err := parser.ParseEnvironmentVariables()
+	if err != nil {
+		t.Fatalf(`Parsing failure: %v`, err)
+	}
+
+	expected := "https://invidious.custom/embed/"
+	result := opts.YouTubeEmbedUrlOverride()
+
+	if result != expected {
+		t.Fatalf(`Unexpected YOUTUBE_EMBED_URL_OVERRIDE value, got %v instead of %v`, result, expected)
 	}
 }
 
