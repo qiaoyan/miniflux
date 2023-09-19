@@ -8,7 +8,7 @@ package ui // import "miniflux.app/ui"
 import (
 	"net/http"
 
-	"miniflux.app/internal/http/response/json"
+	"miniflux.app/v2/internal/http/response/json"
 )
 
 func (h *handler) showAppleAppSiteAssociation(w http.ResponseWriter, r *http.Request) {
