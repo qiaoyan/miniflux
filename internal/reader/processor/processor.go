@@ -6,26 +6,23 @@ package processor
 import (
 	"errors"
 	"fmt"
-	"math"
+	"log/slog"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	"miniflux.app/v2/internal/config"
 	"miniflux.app/v2/internal/http/client"
-	"miniflux.app/v2/internal/logger"
 	"miniflux.app/v2/internal/metric"
 	"miniflux.app/v2/internal/model"
 	"miniflux.app/v2/internal/reader/browser"
+	"miniflux.app/v2/internal/reader/readingtime"
 	"miniflux.app/v2/internal/reader/rewrite"
 	"miniflux.app/v2/internal/reader/sanitizer"
 	"miniflux.app/v2/internal/reader/scraper"
 	"miniflux.app/v2/internal/storage"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/rylans/getlang"
 )
 
 var (
@@ -43,7 +40,13 @@ func ProcessFeedEntries(store *storage.Storage, feed *model.Feed, user *model.Us
 	for i := len(feed.Entries) - 1; i >= 0; i-- {
 		entry := feed.Entries[i]
 
-		logger.Debug("[Processor] Processing entry %q from feed %q", entry.URL, feed.FeedURL)
+		slog.Debug("Processing entry",
+			slog.Int64("user_id", user.ID),
+			slog.Int64("entry_id", entry.ID),
+			slog.String("entry_url", entry.URL),
+			slog.Int64("feed_id", feed.ID),
+			slog.String("feed_url", feed.FeedURL),
+		)
 
 		if isBlockedEntry(feed, entry) || !isAllowedEntry(feed, entry) {
 			continue
@@ -52,7 +55,13 @@ func ProcessFeedEntries(store *storage.Storage, feed *model.Feed, user *model.Us
 		url := getUrlFromEntry(feed, entry)
 		entryIsNew := !store.EntryURLExists(feed.ID, entry.URL)
 		if feed.Crawler && (entryIsNew || forceRefresh) {
-			logger.Debug("[Processor] Crawling entry %q from feed %q", url, feed.FeedURL)
+			slog.Debug("Scraping entry",
+				slog.Int64("user_id", user.ID),
+				slog.Int64("entry_id", entry.ID),
+				slog.String("entry_url", entry.URL),
+				slog.Int64("feed_id", feed.ID),
+				slog.String("feed_url", feed.FeedURL),
+			)
 
 			startTime := time.Now()
 			content, scraperErr := scraper.Fetch(
@@ -73,7 +82,14 @@ func ProcessFeedEntries(store *storage.Storage, feed *model.Feed, user *model.Us
 			}
 
 			if scraperErr != nil {
-				logger.Error(`[Processor] Unable to crawl this entry: %q => %v`, entry.URL, scraperErr)
+				slog.Warn("Unable to scrape entry",
+					slog.Int64("user_id", user.ID),
+					slog.Int64("entry_id", entry.ID),
+					slog.String("entry_url", entry.URL),
+					slog.Int64("feed_id", feed.ID),
+					slog.String("feed_url", feed.FeedURL),
+					slog.Any("error", scraperErr),
+				)
 			} else if content != "" {
 				// We replace the entry content only if the scraper doesn't return any error.
 				entry.Content = content
@@ -96,7 +112,13 @@ func isBlockedEntry(feed *model.Feed, entry *model.Entry) bool {
 	if feed.BlocklistRules != "" {
 		match, _ := regexp.MatchString(feed.BlocklistRules, entry.Title)
 		if match {
-			logger.Debug("[Processor] Blocking entry %q from feed %q based on rule %q", entry.Title, feed.FeedURL, feed.BlocklistRules)
+			slog.Debug("Blocking entry based on rule",
+				slog.Int64("entry_id", entry.ID),
+				slog.String("entry_url", entry.URL),
+				slog.Int64("feed_id", feed.ID),
+				slog.String("feed_url", feed.FeedURL),
+				slog.String("rule", feed.BlocklistRules),
+			)
 			return true
 		}
 	}
@@ -107,7 +129,13 @@ func isAllowedEntry(feed *model.Feed, entry *model.Entry) bool {
 	if feed.KeeplistRules != "" {
 		match, _ := regexp.MatchString(feed.KeeplistRules, entry.Title)
 		if match {
-			logger.Debug("[Processor] Allow entry %q from feed %q based on rule %q", entry.Title, feed.FeedURL, feed.KeeplistRules)
+			slog.Debug("Allow entry based on rule",
+				slog.Int64("entry_id", entry.ID),
+				slog.String("entry_url", entry.URL),
+				slog.Int64("feed_id", feed.ID),
+				slog.String("feed_url", feed.FeedURL),
+				slog.String("rule", feed.KeeplistRules),
+			)
 			return true
 		}
 		return false
@@ -143,7 +171,7 @@ func ProcessEntryWebPage(feed *model.Feed, entry *model.Entry, user *model.User)
 
 	if content != "" {
 		entry.Content = content
-		entry.ReadingTime = calculateReadingTime(content, user)
+		entry.ReadingTime = readingtime.EstimateReadingTime(entry.Content, user.DefaultReadingSpeed, user.CJKReadingSpeed)
 	}
 
 	rewrite.Rewriter(url, entry, entry.Feed.RewriteRules)
@@ -160,9 +188,22 @@ func getUrlFromEntry(feed *model.Feed, entry *model.Entry) string {
 		if len(parts) >= 3 {
 			re := regexp.MustCompile(parts[1])
 			url = re.ReplaceAllString(entry.URL, parts[2])
-			logger.Debug(`[Processor] Rewriting entry URL %s to %s`, entry.URL, url)
+			slog.Debug("Rewriting entry URL",
+				slog.Int64("entry_id", entry.ID),
+				slog.String("original_entry_url", entry.URL),
+				slog.String("rewritten_entry_url", url),
+				slog.Int64("feed_id", feed.ID),
+				slog.String("feed_url", feed.FeedURL),
+			)
 		} else {
-			logger.Debug("[Processor] Cannot find search and replace terms for replace rule %s", feed.UrlRewriteRules)
+			slog.Debug("Cannot find search and replace terms for replace rule",
+				slog.Int64("entry_id", entry.ID),
+				slog.String("original_entry_url", entry.URL),
+				slog.String("rewritten_entry_url", url),
+				slog.Int64("feed_id", feed.ID),
+				slog.String("feed_url", feed.FeedURL),
+				slog.String("url_rewrite_rules", feed.UrlRewriteRules),
+			)
 		}
 	}
 	return url
@@ -173,7 +214,14 @@ func updateEntryReadingTime(store *storage.Storage, feed *model.Feed, entry *mod
 		if entryIsNew {
 			watchTime, err := fetchYouTubeWatchTime(entry.URL)
 			if err != nil {
-				logger.Error("[Processor] Unable to fetch YouTube watch time: %q => %v", entry.URL, err)
+				slog.Warn("Unable to fetch YouTube watch time",
+					slog.Int64("user_id", user.ID),
+					slog.Int64("entry_id", entry.ID),
+					slog.String("entry_url", entry.URL),
+					slog.Int64("feed_id", feed.ID),
+					slog.String("feed_url", feed.FeedURL),
+					slog.Any("error", err),
+				)
 			}
 			entry.ReadingTime = watchTime
 		} else {
@@ -185,7 +233,14 @@ func updateEntryReadingTime(store *storage.Storage, feed *model.Feed, entry *mod
 		if entryIsNew {
 			watchTime, err := fetchOdyseeWatchTime(entry.URL)
 			if err != nil {
-				logger.Error("[Processor] Unable to fetch Odysee watch time: %q => %v", entry.URL, err)
+				slog.Warn("Unable to fetch Odysee watch time",
+					slog.Int64("user_id", user.ID),
+					slog.Int64("entry_id", entry.ID),
+					slog.String("entry_url", entry.URL),
+					slog.Int64("feed_id", feed.ID),
+					slog.String("feed_url", feed.FeedURL),
+					slog.Any("error", err),
+				)
 			}
 			entry.ReadingTime = watchTime
 		} else {
@@ -194,7 +249,7 @@ func updateEntryReadingTime(store *storage.Storage, feed *model.Feed, entry *mod
 	}
 	// Handle YT error case and non-YT entries.
 	if entry.ReadingTime == 0 {
-		entry.ReadingTime = calculateReadingTime(entry.Content, user)
+		entry.ReadingTime = readingtime.EstimateReadingTime(entry.Content, user.DefaultReadingSpeed, user.CJKReadingSpeed)
 	}
 }
 
@@ -301,19 +356,4 @@ func parseISO8601(from string) (time.Duration, error) {
 	}
 
 	return d, nil
-}
-
-func calculateReadingTime(content string, user *model.User) int {
-	sanitizedContent := sanitizer.StripTags(content)
-	languageInfo := getlang.FromString(sanitizedContent)
-
-	var timeToReadInt int
-	if languageInfo.LanguageCode() == "ko" || languageInfo.LanguageCode() == "zh" || languageInfo.LanguageCode() == "jp" {
-		timeToReadInt = int(math.Ceil(float64(utf8.RuneCountInString(sanitizedContent)) / float64(user.CJKReadingSpeed)))
-	} else {
-		nbOfWords := len(strings.Fields(sanitizedContent))
-		timeToReadInt = int(math.Ceil(float64(nbOfWords) / float64(user.DefaultReadingSpeed)))
-	}
-
-	return timeToReadInt
 }
