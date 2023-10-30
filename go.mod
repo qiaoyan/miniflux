@@ -11,7 +11,7 @@ require (
 	github.com/mccutchen/go-httpbin/v2 v2.11.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/tdewolff/minify/v2 v2.12.9
-	github.com/yuin/goldmark v1.5.6
+	github.com/yuin/goldmark v1.6.0
 	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.17.0
 	golang.org/x/oauth2 v0.13.0
