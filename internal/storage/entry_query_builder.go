@@ -160,7 +160,7 @@ func (e *EntryQueryBuilder) WithStatuses(statuses []string) *EntryQueryBuilder {
 func (e *EntryQueryBuilder) WithTags(tags []string) *EntryQueryBuilder {
 	if len(tags) > 0 {
 		for _, cat := range tags {
-			e.conditions = append(e.conditions, fmt.Sprintf("$%d = ANY(e.tags)", len(e.args)+1))
+			e.conditions = append(e.conditions, fmt.Sprintf("LOWER($%d) = ANY(LOWER(e.tags::text)::text[])", len(e.args)+1))
 			e.args = append(e.args, cat)
 		}
 	}
@@ -281,6 +281,7 @@ func (e *EntryQueryBuilder) GetEntries() (model.Entries, error) {
 			f.title as feed_title,
 			f.feed_url,
 			f.site_url,
+			f.description,
 			f.checked_at,
 			f.category_id,
 			c.title as category_title,
@@ -347,6 +348,7 @@ func (e *EntryQueryBuilder) GetEntries() (model.Entries, error) {
 			&entry.Feed.Title,
 			&entry.Feed.FeedURL,
 			&entry.Feed.SiteURL,
+			&entry.Feed.Description,
 			&entry.Feed.CheckedAt,
 			&entry.Feed.Category.ID,
 			&entry.Feed.Category.Title,
