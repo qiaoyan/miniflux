@@ -7,7 +7,7 @@
 
 html {
     -webkit-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 body {
@@ -53,7 +53,6 @@ a:hover {
 .sr-only {
     border: 0 !important;
     clip: rect(1px, 1px, 1px, 1px) !important;
-    -webkit-clip-path: inset(50%) !important;
     clip-path: inset(50%) !important;
     height: 1px !important;
     overflow: hidden !important;
@@ -427,7 +426,6 @@ input[type="number"] {
     line-height: 20px;
     width: 250px;
     font-size: 99%;
-    margin-bottom: 10px;
     margin-top: 5px;
     appearance: none;
 }
@@ -448,7 +446,8 @@ input[type="number"]:focus {
 }
 
 input[type="checkbox"] {
-    margin-bottom: 15px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 textarea {
@@ -675,6 +674,10 @@ template {
     max-width: 300px;
 }
 
+.webauthn {
+    margin-bottom: 20px;
+}
+
 /* Counters */
 .unread-counter-wrapper,
 .error-feeds-counter-wrapper {
@@ -745,16 +748,12 @@ template {
     padding-left: 15px;
 }
 
-.pagination-next {
+.pagination-next, .pagination-last {
     text-align: right;
 }
 
 .pagination-next:after {
     content: " ›";
-}
-
-.pagination-last {
-    text-align: right;
 }
 
 .pagination-last:after {
