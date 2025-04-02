@@ -49,6 +49,11 @@ func TestPluralRules(t *testing.T) {
 			2: 1,
 			5: 1,
 		},
+		"ro_RO": {
+			1: 0,
+			2: 1,
+			5: 1,
+		},
 		"ru_RU": {
 			1: 0,
 			2: 1,
@@ -74,6 +79,10 @@ func TestPluralRules(t *testing.T) {
 			5: 0,
 		},
 		"zh_TW": {
+			1: 0,
+			5: 0,
+		},
+		"nan_Latn_pehoeji": {
 			1: 0,
 			5: 0,
 		},

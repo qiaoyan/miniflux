@@ -5,7 +5,7 @@ package locale // import "miniflux.app/v2/internal/locale"
 
 // See https://localization-guide.readthedocs.io/en/latest/l10n/pluralforms.html
 // And http://www.unicode.org/cldr/charts/29/supplemental/language_plural_rules.html
-var pluralForms = map[string](func(n int) int){
+var pluralForms = map[string]func(n int) int{
 	// nplurals=2; plural=(n != 1);
 	"default": func(n int) int {
 		if n != 1 {
@@ -71,6 +71,16 @@ var pluralForms = map[string](func(n int) int){
 		}
 		return 0
 	},
+	// nplurals=3; plural=(n==1 ? 0 : n==0 || (n%100 > 0 && n%100 < 20) ? 1 : 2);
+	"ro_RO": func(n int) int {
+		switch {
+		case n == 1:
+			return 0
+		case n == 0 || (n%100 > 0 && n%100 < 20):
+			return 1
+		}
+		return 2
+	},
 	"ru_RU": pluralFormRuSrUa,
 	// nplurals=2; plural=(n > 1);
 	"tr_TR": func(n int) int {
@@ -86,6 +96,9 @@ var pluralForms = map[string](func(n int) int){
 		return 0
 	},
 	"zh_TW": func(n int) int {
+		return 0
+	},
+	"nan_Latn_pehoeji": func(n int) int {
 		return 0
 	},
 }
