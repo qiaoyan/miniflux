@@ -435,7 +435,7 @@ var migrations = [...]func(tx *sql.Tx) error{
 
 		hasExtra := false
 		if err := tx.QueryRow(`
-			SELECT true 
+			SELECT true
 			FROM information_schema.columns
 			WHERE
 				table_name='users' AND
@@ -1378,6 +1378,53 @@ var migrations = [...]func(tx *sql.Tx) error{
 			ALTER TABLE integrations ADD COLUMN linkwarden_collection_id int;
 		`
 		_, err = tx.Exec(sql)
+		return err
+	},
+	func(tx *sql.Tx) (err error) {
+		sql := `
+			ALTER TABLE integrations ADD COLUMN readeck_push_enabled bool default 'f';
+		`
+		_, err = tx.Exec(sql)
+		return err
+	},
+	func(tx *sql.Tx) (err error) {
+		// There is no need to keep an index on the content of deleted entries.
+		_, err = tx.Exec(`DROP INDEX document_vectors_idx;`)
+		if err != nil {
+			return err
+		}
+
+		sql := `
+			CREATE INDEX document_vectors_idx
+				ON entries
+				USING gin(document_vectors)
+				WHERE status != 'removed';
+		`
+		_, err = tx.Exec(sql)
+		return err
+	},
+	func(tx *sql.Tx) (err error) {
+		_, err = tx.Exec(`UPDATE user_sessions SET ip = '127.0.0.1'::inet WHERE ip IS NULL`)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(`UPDATE user_sessions SET created_at = now() WHERE created_at IS NULL`)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(`UPDATE user_sessions SET user_agent = '' WHERE user_agent IS NULL`)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(`
+			ALTER TABLE user_sessions
+				ALTER COLUMN ip SET DEFAULT '127.0.0.1'::inet,
+				ALTER COLUMN ip SET NOT NULL,
+				ALTER COLUMN created_at SET DEFAULT now(),
+				ALTER COLUMN created_at SET NOT NULL,
+				ALTER COLUMN user_agent SET DEFAULT '',
+				ALTER COLUMN user_agent SET NOT NULL
+		`)
 		return err
 	},
 }

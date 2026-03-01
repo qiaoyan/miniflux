@@ -47,9 +47,7 @@ func Serve(router *mux.Router, store *storage.Storage) {
 
 	middleware := newMiddleware(store)
 	sr := router.PathPrefix("/reader/api/0").Subrouter()
-	sr.Use(middleware.handleCORS)
 	sr.Use(middleware.apiKeyAuth)
-	sr.Methods(http.MethodOptions)
 	sr.HandleFunc("/token", handler.tokenHandler).Methods(http.MethodGet).Name("Token")
 	sr.HandleFunc("/edit-tag", handler.editTagHandler).Methods(http.MethodPost).Name("EditTag")
 	sr.HandleFunc("/rename-tag", handler.renameTagHandler).Methods(http.MethodPost).Name("Rename Tag")
@@ -244,7 +242,6 @@ func (h *handler) tokenHandler(w http.ResponseWriter, r *http.Request) {
 		slog.String("client_ip", clientIP),
 		slog.String("user_agent", r.UserAgent()),
 		slog.Int64("user_id", request.UserID(r)),
-		slog.String("token", token),
 	)
 
 	w.Header().Add("Content-Type", "text/plain; charset=UTF-8")
@@ -1003,16 +1000,16 @@ func (h *handler) userInfoHandler(w http.ResponseWriter, r *http.Request) {
 		slog.String("user_agent", r.UserAgent()),
 	)
 
-	if err := checkOutputFormat(r); err != nil {
-		json.BadRequest(w, r, err)
-		return
-	}
-
 	user, err := h.store.UserByID(request.UserID(r))
 	if err != nil {
 		json.ServerError(w, r, err)
 		return
 	}
+	if user == nil {
+		json.NotFound(w, r)
+		return
+	}
+
 	userInfo := userInfoResponse{UserID: strconv.FormatInt(user.ID, 10), UserName: user.Username, UserProfileID: strconv.FormatInt(user.ID, 10), UserEmail: user.Username}
 	json.OK(w, r, userInfo)
 }
@@ -1070,7 +1067,7 @@ func (h *handler) streamItemIDsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *handler) handleReadingListStreamHandler(w http.ResponseWriter, r *http.Request, rm RequestModifiers) {
+func (h *handler) handleReadingListStreamHandler(w http.ResponseWriter, r *http.Request, rm requestModifiers) {
 	clientIP := request.ClientIP(r)
 
 	slog.Debug("[GoogleReader] Handle ReadingListStream",
@@ -1129,7 +1126,7 @@ func (h *handler) handleReadingListStreamHandler(w http.ResponseWriter, r *http.
 	json.OK(w, r, streamIDResponse{itemRefs, continuation})
 }
 
-func (h *handler) handleStarredStreamHandler(w http.ResponseWriter, r *http.Request, rm RequestModifiers) {
+func (h *handler) handleStarredStreamHandler(w http.ResponseWriter, r *http.Request, rm requestModifiers) {
 	builder := h.store.NewEntryQueryBuilder(rm.UserID)
 	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithStarred(true)
@@ -1167,7 +1164,7 @@ func (h *handler) handleStarredStreamHandler(w http.ResponseWriter, r *http.Requ
 	json.OK(w, r, streamIDResponse{itemRefs, continuation})
 }
 
-func (h *handler) handleReadStreamHandler(w http.ResponseWriter, r *http.Request, rm RequestModifiers) {
+func (h *handler) handleReadStreamHandler(w http.ResponseWriter, r *http.Request, rm requestModifiers) {
 	builder := h.store.NewEntryQueryBuilder(rm.UserID)
 	builder.WithoutStatus(model.EntryStatusRemoved)
 	builder.WithStatus(model.EntryStatusRead)
@@ -1205,7 +1202,7 @@ func (h *handler) handleReadStreamHandler(w http.ResponseWriter, r *http.Request
 	json.OK(w, r, streamIDResponse{itemRefs, continuation})
 }
 
-func (h *handler) handleFeedStreamHandler(w http.ResponseWriter, r *http.Request, rm RequestModifiers) {
+func (h *handler) handleFeedStreamHandler(w http.ResponseWriter, r *http.Request, rm requestModifiers) {
 	feedID, err := strconv.ParseInt(rm.Streams[0].ID, 10, 64)
 	if err != nil {
 		json.ServerError(w, r, err)
