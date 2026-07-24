@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"miniflux.app/v2/internal/locale"
+	"miniflux.app/v2/internal/model"
 )
 
 func TestValidateUsername(t *testing.T) {
@@ -98,25 +99,46 @@ func TestValidateTimezone(t *testing.T) {
 
 func TestValidateEntryDirection(t *testing.T) {
 	for _, direction := range []string{"asc", "desc"} {
-		if err := validateEntryDirection(direction); err != nil {
+		if err := ValidateDirection(direction); err != nil {
 			t.Errorf("expected valid direction %q to pass, got %v", direction, err)
 		}
 	}
 
-	if err := validateEntryDirection("sideways"); err == nil {
+	if err := ValidateDirection("sideways"); err == nil {
 		t.Error("expected invalid direction to fail")
 	}
 }
 
 func TestValidateEntriesPerPage(t *testing.T) {
-	if err := validateEntriesPerPage(1); err != nil {
-		t.Errorf("expected positive entries per page to pass, got %v", err)
+	for _, value := range []int{1, model.MaxEntryLimit} {
+		if err := validateEntriesPerPage(value); err != nil {
+			t.Errorf("expected %d to pass, got %v", value, err)
+		}
 	}
 
-	for _, value := range []int{0, -1} {
+	for _, value := range []int{0, -1, model.MaxEntryLimit + 1} {
 		if err := validateEntriesPerPage(value); err == nil {
 			t.Errorf("expected %d to fail", value)
 		}
+	}
+}
+
+func TestValidateEntrySortingOrder(t *testing.T) {
+	for _, order := range []string{"published_at", "created_at"} {
+		if err := validateEntrySortingOrder(order); err != nil {
+			t.Errorf("expected valid order %q to pass, got %v", order, err)
+		}
+	}
+
+	// Valid entry-listing orders that are not part of the entry_sorting_order enum.
+	for _, order := range []string{"id", "status", "changed_at", "category_title", "category_id", "title", "author"} {
+		if err := validateEntrySortingOrder(order); err == nil {
+			t.Errorf("expected order %q to be rejected", order)
+		}
+	}
+
+	if err := validateEntrySortingOrder("invalid"); err == nil {
+		t.Error("expected invalid order to fail")
 	}
 }
 
@@ -177,5 +199,26 @@ func TestValidateMediaPlaybackRate(t *testing.T) {
 		if err := validateMediaPlaybackRate(rate); err == nil {
 			t.Errorf("expected invalid rate %.2f to fail", rate)
 		}
+	}
+}
+
+func TestValidateUserModificationAllowsClearingFilterRules(t *testing.T) {
+	req := &model.UserModificationRequest{
+		BlockFilterEntryRules: new(string),
+		KeepFilterEntryRules:  new(string),
+	}
+
+	if err := ValidateUserModification(nil, 0, req); err != nil {
+		t.Fatalf("expected empty filter rules to be accepted, got %v", err)
+	}
+}
+
+func TestValidateUserModificationRejectsInvalidNonEmptyFilterRule(t *testing.T) {
+	req := &model.UserModificationRequest{
+		BlockFilterEntryRules: new("EntryTitle=["),
+	}
+
+	if err := ValidateUserModification(nil, 0, req); err == nil {
+		t.Fatal("expected invalid non-empty filter rules to be rejected")
 	}
 }

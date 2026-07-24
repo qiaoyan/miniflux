@@ -28,6 +28,9 @@ func TestIsRelativePath(t *testing.T) {
 		"http://example.org/file.ext":  false,
 		"//example.org/file.ext":       false,
 		"//example.org":                false,
+		`/\example.org`:                false,
+		`\example.org`:                 false,
+		`path\to\file.ext`:             false,
 		"ftp://example.org/file.ext":   false,
 		"mailto:user@example.org":      false,
 		"magnet:?xt=urn:btih:example":  false,
@@ -45,14 +48,48 @@ func TestIsRelativePath(t *testing.T) {
 
 func TestIsAbsoluteURL(t *testing.T) {
 	scenarios := map[string]bool{
-		"https://example.org/file.pdf": true,
-		"magnet:?xt.1=urn:sha1:YNCKHTQCWBTRNJIV4WNAE52SJUQCZO5C&xt.2=urn:sha1:TXGCZQTH26NL6OUQAJJPFALHG2LTGBC7": true,
-		"invalid url":    false,
-		"/relative/path": false,
+		"https://example.org/file.pdf":                   true,
+		"https://example.org/file.pdf?download=1#page=2": true,
+		"mailto:user@example.org":                        false,
+		"data:text/plain,hello":                          false,
+		"magnet:?xt.1=urn:sha1:YNCKHTQCWBTRNJIV4WNAE52SJUQCZO5C&xt.2=urn:sha1:TXGCZQTH26NL6OUQAJJPFALHG2LTGBC7": false,
+		"invalid url":                false,
+		"/relative/path":             false,
+		"//example.org/path":         false,
+		" https://example.org/path":  false,
+		"\thttps://example.org/path": false,
 	}
 
 	for input, expected := range scenarios {
 		actual := IsAbsoluteURL(input)
+		if actual != expected {
+			t.Errorf(`Unexpected result, got %v instead of %v for %q`, actual, expected, input)
+		}
+	}
+}
+
+func TestIsValidProxyURL(t *testing.T) {
+	scenarios := map[string]bool{
+		"http://127.0.0.1:3128":      true,
+		"http://[::1]:1055":          true,
+		"https://proxy.example.org":  true,
+		"socks5://127.0.0.1:1080":    true,
+		"socks5h://127.0.0.1:1080":   true,
+		"socks5://[::1]:1055":        true,
+		"socks5h://[::1]:1055":       true,
+		"socks5://[::1%25eno1]:1055": true,
+		"ftp://host":                 false,
+		"/relative/path":             false,
+		"invalid url":                false,
+		"http://[::1":                false,
+		"http:///var/run/socket":     false,
+		"sock:///socket.file":        false,
+		"socks5://[::1%eno1]:1055":   false,
+		"":                           false,
+	}
+
+	for input, expected := range scenarios {
+		actual := IsValidProxyURL(input)
 		if actual != expected {
 			t.Errorf(`Unexpected result, got %v instead of %v for %q`, actual, expected, input)
 		}
@@ -226,6 +263,7 @@ func TestIsNonPublicIP(t *testing.T) {
 	}{
 		{"nil", "", true},
 		{"private IPv4", "192.168.1.10", true},
+		{"shared address space IPv4", "100.64.0.1", true},
 		{"loopback IPv4", "127.0.0.1", true},
 		{"link-local IPv4", "169.254.42.1", true},
 		{"multicast IPv4", "224.0.0.1", true},
@@ -246,43 +284,9 @@ func TestIsNonPublicIP(t *testing.T) {
 				}
 			}
 
-			if got := isNonPublicIP(ip); got != tc.want {
+			if got := IsNonPublicIP(ip); got != tc.want {
 				t.Fatalf("unexpected result for %s: got %v want %v", tc.name, got, tc.want)
 			}
 		})
-	}
-}
-
-func TestResolvesToPrivateIP(t *testing.T) {
-	testCases := []struct {
-		name string
-		host string
-		want bool
-	}{
-		{"localhost", "localhost", true},
-		{"example.org", "example.org", false},
-		{"loopback IPv4 literal", "127.0.0.1", true},
-		{"loopback IPv6 literal", "::1", true},
-		{"private IPv4 literal", "192.168.1.1", true},
-		{"public IPv4 literal", "93.184.216.34", false},
-		{"public IPv6 literal", "2001:4860:4860::8888", false},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := ResolvesToPrivateIP(tc.host)
-			if err != nil {
-				t.Fatalf("unexpected error for %s: %v", tc.host, err)
-			}
-			if got != tc.want {
-				t.Fatalf("unexpected result for %s: got %v want %v", tc.name, got, tc.want)
-			}
-		})
-	}
-}
-
-func TestResolvesToPrivateIPError(t *testing.T) {
-	if _, err := ResolvesToPrivateIP(""); err == nil {
-		t.Fatalf("expected an error for empty host")
 	}
 }

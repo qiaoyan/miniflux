@@ -4,7 +4,6 @@
 package webhook // import "miniflux.app/v2/internal/integration/webhook"
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,13 +11,11 @@ import (
 	"time"
 
 	"miniflux.app/v2/internal/crypto"
+	"miniflux.app/v2/internal/http/client"
 	"miniflux.app/v2/internal/model"
-	"miniflux.app/v2/internal/version"
 )
 
 const (
-	defaultClientTimeout = 10 * time.Second
-
 	NewEntriesEventType = "new_entries"
 	SaveEntryEventType  = "save_entry"
 )
@@ -122,20 +119,14 @@ func (c *Client) makeRequest(eventType string, payload any) error {
 		return fmt.Errorf("webhook: unable to encode request body: %v", err)
 	}
 
-	request, err := http.NewRequest(http.MethodPost, c.webhookURL, bytes.NewReader(requestBody))
+	response, err := client.NewRequestBuilder(c.webhookURL).
+		WithMethod(http.MethodPost).
+		WithJSONBody(requestBody).
+		WithHeader("X-Miniflux-Signature", crypto.GenerateSHA256Hmac(c.webhookSecret, requestBody)).
+		WithHeader("X-Miniflux-Event-Type", eventType).
+		Do()
 	if err != nil {
-		return fmt.Errorf("webhook: unable to create request: %v", err)
-	}
-
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("User-Agent", "Miniflux/"+version.Version)
-	request.Header.Set("X-Miniflux-Signature", crypto.GenerateSHA256Hmac(c.webhookSecret, requestBody))
-	request.Header.Set("X-Miniflux-Event-Type", eventType)
-
-	httpClient := &http.Client{Timeout: defaultClientTimeout}
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return fmt.Errorf("webhook: unable to send request: %v", err)
+		return fmt.Errorf("webhook: %w", err)
 	}
 	defer response.Body.Close()
 

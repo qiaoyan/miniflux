@@ -15,6 +15,7 @@ import (
 	"unicode"
 
 	"miniflux.app/v2/internal/config"
+	"miniflux.app/v2/internal/model"
 
 	nethtml "golang.org/x/net/html"
 
@@ -355,6 +356,24 @@ func addPDFLink(entryURL, entryContent string) string {
 	return entryContent
 }
 
+func addEnclosureLinks(entry *model.Entry) string {
+	var links strings.Builder
+
+	for _, enclosure := range entry.Enclosures {
+		if enclosure.URL == "" {
+			continue
+		}
+
+		enclosureURL := html.EscapeString(enclosure.URL)
+		links.WriteString(`<li><a href="` + enclosureURL + `">` + enclosureURL + `</a></li>`)
+	}
+
+	if links.Len() > 0 {
+		return entry.Content + "<hr/><ul>" + strings.TrimSpace(links.String()) + "</ul>"
+	}
+	return entry.Content
+}
+
 func replaceTextLinks(input string) string {
 	return textLinkRegex.ReplaceAllString(input, `<a href="${1}">${1}</a>`)
 }
@@ -489,8 +508,11 @@ func removeTables(entryContent string) string {
 				break
 			}
 
-			loopElement.Parent().AppendHtml(innerHtml)
-			loopElement.Remove()
+			// Replace the element with its own content in place, so the
+			// surrounding content keeps its original document order.
+			// Appending to the parent would move the unwrapped content to
+			// the end of the parent instead.
+			loopElement.ReplaceWithHtml(innerHtml)
 		}
 	}
 

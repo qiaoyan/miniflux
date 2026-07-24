@@ -69,14 +69,14 @@ func ValidateUserModification(store *storage.Storage, userID int64, changes *mod
 	}
 
 	if changes.EntryDirection != nil {
-		if err := validateEntryDirection(*changes.EntryDirection); err != nil {
-			return err
+		if err := ValidateDirection(*changes.EntryDirection); err != nil {
+			return locale.NewLocalizedError("error.invalid_entry_direction")
 		}
 	}
 
 	if changes.EntryOrder != nil {
-		if err := ValidateEntryOrder(*changes.EntryOrder); err != nil {
-			return locale.NewLocalizedError("error.invalid_entry_order")
+		if err := validateEntrySortingOrder(*changes.EntryOrder); err != nil {
+			return err
 		}
 	}
 
@@ -129,14 +129,18 @@ func ValidateUserModification(store *storage.Storage, userID int64, changes *mod
 	}
 
 	if changes.BlockFilterEntryRules != nil {
-		if err := isValidFilterRules(*changes.BlockFilterEntryRules, "block"); err != nil {
-			return err
+		if *changes.BlockFilterEntryRules != "" {
+			if err := IsValidFilterRules(*changes.BlockFilterEntryRules, "block"); err != nil {
+				return err
+			}
 		}
 	}
 
 	if changes.KeepFilterEntryRules != nil {
-		if err := isValidFilterRules(*changes.KeepFilterEntryRules, "keep"); err != nil {
-			return err
+		if *changes.KeepFilterEntryRules != "" {
+			if err := IsValidFilterRules(*changes.KeepFilterEntryRules, "keep"); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -207,16 +211,18 @@ func validateTimezone(timezoneValue string) *locale.LocalizedError {
 	return nil
 }
 
-func validateEntryDirection(direction string) *locale.LocalizedError {
-	if direction != "asc" && direction != "desc" {
-		return locale.NewLocalizedError("error.invalid_entry_direction")
+func validateEntriesPerPage(entriesPerPage int) *locale.LocalizedError {
+	if entriesPerPage < 1 || entriesPerPage > model.MaxEntryLimit {
+		return locale.NewLocalizedError("error.entries_per_page_invalid")
 	}
 	return nil
 }
 
-func validateEntriesPerPage(entriesPerPage int) *locale.LocalizedError {
-	if entriesPerPage < 1 {
-		return locale.NewLocalizedError("error.entries_per_page_invalid")
+// validateEntrySortingOrder must accept only the values of the
+// entry_sorting_order enum type in the database.
+func validateEntrySortingOrder(order string) *locale.LocalizedError {
+	if order != "published_at" && order != "created_at" {
+		return locale.NewLocalizedError("error.invalid_entry_order")
 	}
 	return nil
 }

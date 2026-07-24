@@ -5,22 +5,9 @@ package validator // import "miniflux.app/v2/internal/validator"
 
 import (
 	"testing"
+
+	"miniflux.app/v2/internal/model"
 )
-
-func TestIsValidURL(t *testing.T) {
-	scenarios := map[string]bool{
-		"https://www.example.org": true,
-		"http://www.example.org/": true,
-		"www.example.org":         false,
-	}
-
-	for link, expected := range scenarios {
-		result := IsValidURL(link)
-		if result != expected {
-			t.Errorf(`Unexpected result, got %v instead of %v`, result, expected)
-		}
-	}
-}
 
 func TestValidateRange(t *testing.T) {
 	if err := ValidateRange(-1, 0); err == nil {
@@ -31,8 +18,16 @@ func TestValidateRange(t *testing.T) {
 		t.Error(`An invalid limit should generate a error`)
 	}
 
+	if err := ValidateRange(0, model.MaxEntryLimit+1); err == nil {
+		t.Error(`A limit above MaxEntryLimit should generate an error`)
+	}
+
 	if err := ValidateRange(42, 42); err != nil {
 		t.Error(`A valid offset and limit should not generate any error`)
+	}
+
+	if err := ValidateRange(0, model.MaxEntryLimit); err != nil {
+		t.Error(`A limit equal to MaxEntryLimit should not generate an error`)
 	}
 }
 

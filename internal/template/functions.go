@@ -17,22 +17,27 @@ import (
 
 	"miniflux.app/v2/internal/config"
 	"miniflux.app/v2/internal/crypto"
-	"miniflux.app/v2/internal/http/route"
 	"miniflux.app/v2/internal/locale"
 	"miniflux.app/v2/internal/mediaproxy"
 	"miniflux.app/v2/internal/model"
+	"miniflux.app/v2/internal/reader/sanitizer"
 	"miniflux.app/v2/internal/timezone"
+	"miniflux.app/v2/internal/ui/static"
 	"miniflux.app/v2/internal/urllib"
-
-	"github.com/gorilla/mux"
 )
 
 type funcMap struct {
-	router *mux.Router
+	basePath  string
+	iconPaths map[string]string
 }
 
 // Map returns a map of template functions that are compiled during template parsing.
 func (f *funcMap) Map() template.FuncMap {
+	// Pre-compute every icon URL once, as iconPath is called a lot during pages rendering.
+	f.iconPaths = make(map[string]string, len(static.BinaryBundles))
+	for filename, bundle := range static.BinaryBundles {
+		f.iconPaths[filename] = f.basePath + "/icon/" + bundle.Checksum + "/" + filename
+	}
 	return template.FuncMap{
 		"contains":         strings.Contains,
 		"csp":              csp,
@@ -52,12 +57,13 @@ func (f *funcMap) Map() template.FuncMap {
 		"hasAuthProxy": func() bool {
 			return config.Opts.AuthProxyHeader() != ""
 		},
-		"route": func(name string, args ...any) string {
-			return route.Path(f.router, name, args...)
+		"routePath": func(format string, args ...any) string {
+			if len(args) > 0 {
+				return f.basePath + fmt.Sprintf(format, args...)
+			}
+			return f.basePath + format
 		},
-		"safeURL": func(url string) template.URL {
-			return template.URL(url)
-		},
+		"untrustedURL": untrustedURL,
 		"safeCSS": func(str string) template.CSS {
 			return template.CSS(str)
 		},
@@ -67,14 +73,12 @@ func (f *funcMap) Map() template.FuncMap {
 		"safeHTML": func(str string) template.HTML {
 			return template.HTML(str)
 		},
-		"proxyFilter": func(data string) string {
-			return mediaproxy.RewriteDocumentWithRelativeProxyURL(f.router, data)
-		},
+		"proxyFilter": mediaproxy.RewriteDocumentWithRelativeProxyURL,
 		"proxyURL": func(link string) string {
 			mediaProxyMode := config.Opts.MediaProxyMode()
 
 			if mediaProxyMode == "all" || (mediaProxyMode != "none" && !urllib.IsHTTPS(link)) {
-				return mediaproxy.ProxifyRelativeURL(f.router, link)
+				return mediaproxy.ProxifyRelativeURL(link)
 			}
 
 			return link
@@ -90,13 +94,8 @@ func (f *funcMap) Map() template.FuncMap {
 			return ts.Format("2006-01-02 15:04:05")
 		},
 		"theme_color": model.ThemeColor,
-		"icon": func(iconName string) template.HTML {
-			return template.HTML(fmt.Sprintf(
-				`<svg class="icon" aria-hidden="true"><use href="%s#icon-%s"/></svg>`,
-				route.Path(f.router, "appIcon", "filename", "sprite.svg"),
-				iconName,
-			))
-		},
+		"iconPath":    f.iconPath,
+		"icon":        f.iconFunc(),
 		"nonce": func() string {
 			return crypto.GenerateRandomStringHex(16)
 		},
@@ -161,6 +160,21 @@ func (f *funcMap) Map() template.FuncMap {
 	}
 }
 
+func (f *funcMap) iconPath(filename string) string {
+	return f.iconPaths[filename]
+}
+
+func (f *funcMap) iconFunc() func(string) template.HTML {
+	// Concatenation is used instead of fmt.Sprintf,
+	// as it's much faster, and this function is called
+	// a bunch of times per feed item on the main page.
+	prefix := `<svg class="icon" aria-hidden="true"><use href="` + f.iconPath("sprite.svg") + `#icon-`
+	const suffix = `"/></svg>`
+	return func(iconName string) template.HTML {
+		return template.HTML(prefix + iconName + suffix)
+	}
+}
+
 func csp(user *model.User, nonce string) string {
 	policies := map[string]string{
 		"default-src":               "'none'",
@@ -185,6 +199,7 @@ func csp(user *model.User, nonce string) string {
 	}
 
 	var policy strings.Builder
+	policy.Grow(350)
 	for key, value := range policies {
 		policy.WriteString(key)
 		policy.WriteString(" ")
@@ -211,15 +226,41 @@ func dict(values ...any) (map[string]any, error) {
 }
 
 func truncate(str string, max int) string {
-	if runes := []rune(str); len(runes) > max {
-		return string(runes[:max]) + "…"
+	if max <= 0 {
+		panic("truncate: max must be greater than zero")
 	}
+
+	// Template callers pass feed titles from remote content. Scanning and
+	// allocating the entire untrusted input just to truncate it could create a
+	// denial-of-service risk, so stop as soon as we reach the requested limit.
+	runeCount := 0
+	for i := range str {
+		if runeCount == max {
+			return str[:i] + "…"
+		}
+		runeCount++
+	}
+
 	return str
 }
 
 func isEmail(str string) bool {
 	_, err := mail.ParseAddress(str)
 	return err == nil
+}
+
+// untrustedURL validates a feed-supplied URL against the sanitizer's scheme
+// allowlist before exposing it to html/template. Returns "#" for unsafe URLs
+// (e.g. javascript:, data:) so anchors render as inert links.
+//
+// Go's built-in html/template URL filter only allows http(s), mailto, and
+// relative URLs — too narrow for feeds which legitimately use schemes like
+// magnet:, feed:, webcal:, and tel:.
+func untrustedURL(rawURL string) template.URL {
+	if !sanitizer.HasValidURIScheme(rawURL) {
+		return template.URL("#")
+	}
+	return template.URL(rawURL)
 }
 
 // Returns the duration in human readable format (hours and minutes).
