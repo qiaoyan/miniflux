@@ -34,5 +34,5 @@ func (h *handler) showAppleAppSiteAssociation(w http.ResponseWriter, r *http.Req
 		},
 	}
 
-	json.OK(w, r, result)
+	response.JSON(w, r, result)
 }

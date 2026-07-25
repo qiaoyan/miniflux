@@ -97,6 +97,6 @@ func (m *authProxyMiddleware) handle(next http.Handler) http.Handler {
 			return
 		}
 
-		response.HTMLRedirect(w, r, m.basePath+"/"+user.DefaultHomePage)
+		response.HTMLRedirect(w, r, m.basePath+"/"+"feeds")
 	})
 }
